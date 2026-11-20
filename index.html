@@ -80,7 +80,7 @@ kbd{font:600 12px Rubik,sans-serif;background:#000;border:1px solid var(--line);
 
   <section class="screen on" id="sTitle"><div class="wrap">
     <h1>Party Brawl</h1>
-    <p class="sub">Eight years of campaigns. Twelve fighters. Zero dignity. <span class="note">Prototype build v0.2.1. Online: both players need the same version.</span></p>
+    <p class="sub">Eight years of campaigns. Twelve fighters. Zero dignity. <span class="note">Prototype build <b id="verTag"></b>. Online: both players need the same version.</span><span class="note" id="verNew" style="display:none"></span></p>
     <div class="menu">
       <button class="big" data-go="solo" type="button">Solo vs CPU<small>Pick a fighter and take on the computer. Works on phones.</small></button>
       <button class="big" data-go="versus" type="button">2 Players<small>Same keyboard, or plug in two controllers.</small></button>
@@ -2521,7 +2521,14 @@ $('oSelect').onclick=()=>{if(mode==='online'){netSend({t:'select'});netGoSelect(
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const BUILD='pb-'+CH.length+'-'+STAGES.length+'-r1';
+const VERSION='0.2.2'; // shown on the title screen; online players must match
+const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
+$('verTag').textContent='v'+VERSION;
+(function checkForUpdate(){ // phones cache the page: if the copy on the server is newer, say so
+  if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
+  fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t.match(/const VERSION='([^']+)'/);
+    if(m&&m[1]!==VERSION){const el=$('verNew');el.style.display='block';el.innerHTML=`<b style="color:#ff6a5a">A newer version (v${m[1]}) is out.</b> <button type="button" id="verReload" class="pill">Reload</button>`;
+      $('verReload').onclick=()=>location.replace(location.pathname+'?v='+m[1])}}).catch(()=>{})})();
 const NET={on:false,host:false,code:'',peer:null,conn:null,myPick:null,oppPick:null,ping:0,inMatch:false,wantRematch:[false,false],lastMsg:0};
 const RB={on:false,me:0,delay:2,frame:0,local:{},remote:{},pred:{},snaps:{},lastRemote:-1,lastRemoteInput:0,rollTo:null,maxAhead:8,sums:{},desync:false,stalls:0,rollbacks:0};
 function deepClone(o){if(o===null||typeof o!=='object')return o;if(Array.isArray(o)){const a=new Array(o.length);for(let i=0;i<o.length;i++)a[i]=deepClone(o[i]);return a}const r={};for(const k in o)r[k]=deepClone(o[k]);return r}
@@ -2545,8 +2552,10 @@ function bcConn(name,isHost){ // test transport between two tabs on one computer
   ch.onmessage=e=>{if(e.data.from===me)return;if(e.data.m&&e.data.m.t==='knock'&&isHost&&!c.started){c.started=1;hs.open&&hs.open();c.send({t:'knock'});return}if(e.data.m&&e.data.m.t==='knock'&&!isHost&&!c.started){c.started=1;hs.open&&hs.open();return}hs.data&&hs.data(e.data.m)};
   setTimeout(()=>{if(!isHost)c.send({t:'knock'})},50);return c}
 function netUseConn(c){
-  c.on('open',()=>{NET.conn=c;NET.on=true;NET.lastMsg=performance.now();netSend({t:'hello',v:BUILD});netStatus('Connected!');setTimeout(netGoSelect,400)});
-  c.on('data',netRecv);c.on('close',()=>netDrop('Your opponent disconnected.'));c.on('error',()=>netDrop('Connection error.'));
+  NET.pending=c; // messages can arrive before 'open' fires, so the version handshake works in either order
+  c.on('open',()=>{if(c._dead)return;NET.conn=c;NET.on=true;NET.lastMsg=performance.now();netSend({t:'hello',v:BUILD,ver:VERSION});
+    if(NET.verOk==='bad')return;if(NET.verOk){netStatus('Connected!');setTimeout(netGoSelect,300)}else netStatus('Connected! Checking versions…')});
+  c.on('data',m=>{if(!c._dead)netRecv(m)});c.on('close',()=>{if(!c._dead)netDrop('Your opponent disconnected.')});c.on('error',()=>{if(!c._dead)netDrop('Connection error.')});
 }
 function netHost(){
   netReset();NET.host=true;NET.code=netCodeGen();
@@ -2570,14 +2579,14 @@ function netJoin(){
       setTimeout(()=>{if(NET.peer===myPeer&&!NET.on&&!failed)netStatus(found?noLink:'No room found with code '+code+'. Check the code, and that the host still has the room screen open.')},15000)});
     NET.peer.on('error',e=>netStatus(e.type==='peer-unavailable'?'No room found with code '+code+'. Check the code, and that the host still has the room screen open.':'Online error: '+e.type));
   })}
-function netReset(){try{NET.conn&&NET.conn.close()}catch(e){}try{NET.peer&&NET.peer.destroy()}catch(e){}Object.assign(NET,{on:false,conn:null,peer:null,myPick:null,oppPick:null,inMatch:false,wantRematch:[false,false]});RB.on=false}
+function netReset(){for(const x of [NET.conn,NET.pending])if(x)x._dead=true;NET.pending=null;NET.verOk=false;try{NET.conn&&NET.conn.close()}catch(e){}try{NET.peer&&NET.peer.destroy()}catch(e){}Object.assign(NET,{on:false,conn:null,peer:null,myPick:null,oppPick:null,inMatch:false,wantRematch:[false,false]});RB.on=false}
 function netDrop(msg){if(!NET.on&&!NET.conn)return;netReset();if(mode==='online'){toAttract();show('sOnline');netStatus(msg)}}
 function netSend(m){try{NET.conn&&NET.conn.send(m)}catch(e){}}
 function netGoSelect(){mode='online';cpuOn=[false,false];NET.myPick=null;NET.oppPick=null;NET.inMatch=false;RB.on=false;toAttract();pickStage=NET.host?0:1;show('sSelect');selectPrompt()}
 function netPick(ci){NET.myPick=ci;netSend({t:'pick',ci});selectPrompt();netTryStart()}
 function netTryStart(){if(!NET.host||NET.myPick===null||NET.oppPick===null)return;
   const seed=(Date.now()&0xffffff)|1,stage=stagePick==='random'?Math.floor(Math.random()*STAGES.length):stagePick,picks=[NET.myPick,NET.oppPick];
-  netSend({t:'start',seed,picks,stage});netStartMatch(seed,picks,stage)}
+  netSend({t:'start',seed,picks,stage,sid:STAGES[stage].id});netStartMatch(seed,picks,stage)}
 function netStartMatch(seed,picks2,stage){
   picks=picks2.slice();attract=false;S=SIM.newMatch(picks[0],picks[1],seed,stage);cpuMem=[{},{}];paused=false;overShown=false;
   Object.assign(RB,{on:true,me:NET.host?0:1,frame:0,local:{},remote:{},pred:{},snaps:{},lastRemote:RB.delay-1,lastRemoteInput:0,rollTo:null,sums:{},desync:false,stalls:0,rollbacks:0});
@@ -2590,16 +2599,18 @@ function netRecv(m){NET.lastMsg=performance.now();
       if(f>RB.lastRemote){RB.lastRemote=f;RB.lastRemoteInput=m.i[k]}
       if(f<RB.frame&&RB.pred[f]!==undefined&&RB.pred[f]!==m.i[k])RB.rollTo=RB.rollTo===null?f:Math.min(RB.rollTo,f)}}
   else if(m.t==='sum'){const mine=RB.sums[m.f];if(mine!==undefined&&mine!==m.h&&!RB.desync){RB.desync=true;console.warn('Party Brawl: desync at frame',m.f)}}
-  else if(m.t==='hello'){if(m.v!==BUILD)netStatus('Warning: you are on different versions of the game. Both of you should reload the page.')}
+  else if(m.t==='hello'){if(m.v===BUILD){if(!NET.verOk){NET.verOk=true;if(NET.on){netStatus('Connected!');setTimeout(netGoSelect,300)}}}
+    else{const theirs=m.ver?'v'+m.ver:'an older version';NET.verOk='bad';try{(NET.conn||NET.pending).send({t:'bye'})}catch(e){}const msg=`Can't play: you're on v${VERSION}, your opponent is on ${theirs}. Both of you reload the page (close the tab and open the link again if it doesn't update), then check the title screen shows the same version.`;
+      netReset();toAttract();show('sOnline');netStatus(msg)}}
   else if(m.t==='pick'){NET.oppPick=m.ci;selectPrompt();netTryStart()}
-  else if(m.t==='start'){netStartMatch(m.seed,m.picks,m.stage)}
+  else if(m.t==='start'){const i=m.sid?STAGES.findIndex(st=>st.id===m.sid):m.stage;if(i<0){netSend({t:'bye'});netReset();toAttract();show('sOnline');netStatus('Your opponent picked a stage your copy of the game does not have. Both of you reload the page.');return}netStartMatch(m.seed,m.picks,i)}
   else if(m.t==='rematch'){NET.wantRematch[NET.host?1:0]=true;netCheckRematch();$('overSub').textContent='Your opponent wants a rematch!'}
   else if(m.t==='select'){netGoSelect()}
   else if(m.t==='ping')netSend({t:'pong',ts:m.ts});
   else if(m.t==='pong')NET.ping=Math.round(performance.now()-m.ts);
   else if(m.t==='bye')netDrop('Your opponent left.');
 }
-function netCheckRematch(){if(NET.host&&NET.wantRematch[0]&&NET.wantRematch[1]){const seed=(Date.now()&0xffffff)|1,stage=S?S.stage:0;netSend({t:'start',seed,picks,stage});netStartMatch(seed,picks,stage)}}
+function netCheckRematch(){if(NET.host&&NET.wantRematch[0]&&NET.wantRematch[1]){const seed=(Date.now()&0xffffff)|1,stage=S?S.stage:0;netSend({t:'start',seed,picks,stage,sid:STAGES[stage].id});netStartMatch(seed,picks,stage)}}
 setInterval(()=>{if(!NET.on)return;netSend({t:'ping',ts:performance.now()});if(performance.now()-NET.lastMsg>10000)netDrop('Lost connection to your opponent.')},1000);
 function localInput(){const pads=padsNow();let b=kbBits(KEYMAP[0])|kbBits(KEYMAP[1])|touchBits|touchTap;for(let i=0;i<pads.length;i++)b|=padBits(pads[i],i);taps.clear();touchTap=0;return b}
 function rbInputs(f){const mine=RB.local[f]??0;let theirs=RB.remote[f];if(theirs===undefined){theirs=RB.lastRemoteInput;RB.pred[f]=theirs}return RB.me===0?[mine,theirs]:[theirs,mine]}

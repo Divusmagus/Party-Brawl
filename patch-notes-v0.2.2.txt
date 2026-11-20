@@ -1,0 +1,10 @@
+PARTY BRAWL - PATCH NOTES v0.2.2
+Released 2026-11-20
+
+ONLINE
+- Both players must now be on the same version to play. If they aren't, the game stops before character
+  select and says which versions each of you has, instead of letting you fight on two different stages.
+  (In the first real test, one phone had an old copy cached, so "Random" picked Tahoe on one screen and
+  Erebus's Lair on the other, and the fight drifted apart.)
+- The stage is now sent by name, not by number, so the two players can never end up on different stages.
+- The title screen checks for updates: if a newer version is on the site, it says so with a Reload button.
