@@ -80,7 +80,7 @@ kbd{font:600 12px Rubik,sans-serif;background:#000;border:1px solid var(--line);
 
   <section class="screen on" id="sTitle"><div class="wrap">
     <h1>Party Brawl</h1>
-    <p class="sub">Eight years of campaigns. Twelve fighters. Zero dignity. <span class="note">Prototype build v0.2. Online: both players need the same version.</span></p>
+    <p class="sub">Eight years of campaigns. Twelve fighters. Zero dignity. <span class="note">Prototype build v0.2.1. Online: both players need the same version.</span></p>
     <div class="menu">
       <button class="big" data-go="solo" type="button">Solo vs CPU<small>Pick a fighter and take on the computer. Works on phones.</small></button>
       <button class="big" data-go="versus" type="button">2 Players<small>Same keyboard, or plug in two controllers.</small></button>
@@ -2526,6 +2526,16 @@ const NET={on:false,host:false,code:'',peer:null,conn:null,myPick:null,oppPick:n
 const RB={on:false,me:0,delay:2,frame:0,local:{},remote:{},pred:{},snaps:{},lastRemote:-1,lastRemoteInput:0,rollTo:null,maxAhead:8,sums:{},desync:false,stalls:0,rollbacks:0};
 function deepClone(o){if(o===null||typeof o!=='object')return o;if(Array.isArray(o)){const a=new Array(o.length);for(let i=0;i<o.length;i++)a[i]=deepClone(o[i]);return a}const r={};for(const k in o)r[k]=deepClone(o[k]);return r}
 function stateHash(st){let h=st.frame*31+st.rng;for(const f of st.f)h=(h*33+Math.round(f.x*10)*7+Math.round(f.y*10)*13+Math.round(f.hp*10)+f.bars*1000+f.wins*99991)|0;return h}
+// Connection helpers. STUN finds each phone's public address; TURN relays the traffic when the two can't
+// reach each other directly (cellular data, work/school Wi-Fi). Paste Open Relay (Metered) credentials into TURN_EXTRA.
+const TURN_EXTRA=[{urls:'stun:stun.relay.metered.ca:80'}, // Open Relay (Metered), account divusmagus-brawl, free 20 GB/month
+  {urls:['turn:standard.relay.metered.ca:80','turn:standard.relay.metered.ca:80?transport=tcp','turn:standard.relay.metered.ca:443','turns:standard.relay.metered.ca:443?transport=tcp'],username:'4bb6d6e9f701c7276c462628',credential:'VTSrpjHYWiPTezeu'}];
+const ICE_SERVERS=[{urls:['stun:stun.l.google.com:19302','stun:stun.cloudflare.com:3478']},
+  {urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'},...TURN_EXTRA];
+const PEER_OPTS={config:{iceServers:ICE_SERVERS}};
+function netKeepAlive(){ // phones drop the host's link to the room service when the browser goes to the background (e.g. texting the code)
+  NET.peer.on('disconnected',()=>{const pr=NET.peer;setTimeout(()=>{if(pr&&pr===NET.peer&&pr.disconnected&&!pr.destroyed)try{pr.reconnect()}catch(e){}},500)})}
+document.addEventListener('visibilitychange',()=>{const pr=NET.peer;if(document.visibilityState==='visible'&&pr&&pr.disconnected&&!pr.destroyed)try{pr.reconnect()}catch(e){}});
 function netStatus(t){const el=$('nStatus');if(el)el.innerHTML=t}
 function netCodeGen(){const L='ABCDEFGHJKLMNPQRSTUVWXYZ';let c='';for(let i=0;i<4;i++)c+=L[Math.floor(Math.random()*L.length)];return c}
 function netLoadPeer(cb){if(window.Peer)return cb();netStatus('Loading online library…');const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=cb;sc.onerror=()=>netStatus('Could not load the online library. Check your internet connection. (Online play does not work inside the Claude preview: use the GitHub Pages copy of the game.)');document.head.appendChild(sc)}
@@ -2542,7 +2552,7 @@ function netHost(){
   netReset();NET.host=true;NET.code=netCodeGen();
   if(location.hash.includes('bc')){netUseConn(bcConn('pb-'+NET.code,true));netStatus(`Room code: <b style="font-size:28px;letter-spacing:4px;color:#f2b134">${NET.code}</b><br>Waiting for your friend to join… (tab-test mode)`);return}
   netLoadPeer(()=>{
-    NET.peer=new Peer('partybrawl-'+NET.code);
+    NET.peer=new Peer('partybrawl-'+NET.code,PEER_OPTS);netKeepAlive();
     NET.peer.on('open',()=>netStatus(`Room code: <b style="font-size:28px;letter-spacing:4px;color:#f2b134">${NET.code}</b><br>Send this to your friend, then wait for them to join…`));
     NET.peer.on('connection',c=>{if(NET.conn){c.close();return}netUseConn(c)});
     NET.peer.on('error',e=>{if(e.type==='unavailable-id')netHost();else netStatus('Online error: '+e.type)});
@@ -2552,9 +2562,13 @@ function netJoin(){
   netReset();NET.host=false;NET.code=code;
   if(location.hash.includes('bc')){netUseConn(bcConn('pb-'+code,false));netStatus('Joining…');return}
   netLoadPeer(()=>{netStatus('Joining room '+code+'…');
-    NET.peer=new Peer();
-    NET.peer.on('open',()=>{const c=NET.peer.connect('partybrawl-'+code,{reliable:true});netUseConn(c);setTimeout(()=>{if(!NET.on)netStatus('No room found with code '+code+'. Check the code and that the host is waiting.')},8000)});
-    NET.peer.on('error',e=>netStatus(e.type==='peer-unavailable'?'No room found with code '+code+'.':'Online error: '+e.type));
+    NET.peer=new Peer(PEER_OPTS);const myPeer=NET.peer;let found=false,failed=false;
+    const noLink='Found the room, but your two devices could not link up. This usually happens on cellular data or work/school Wi-Fi. Try both on the same home Wi-Fi, or one of you on Wi-Fi and the other on a hotspot.';
+    NET.peer.on('open',()=>{const c=NET.peer.connect('partybrawl-'+code,{reliable:true});netUseConn(c);
+      const watch=setInterval(()=>{if(NET.peer!==myPeer||NET.on){clearInterval(watch);return}const pc=c.peerConnection,st=pc&&(pc.iceConnectionState||pc.connectionState);
+        if(st&&st!=='new')found=true;if(st==='checking')netStatus('Room found. Linking up…');if(st==='failed'&&!failed){failed=true;netStatus(noLink)}},400);
+      setTimeout(()=>{if(NET.peer===myPeer&&!NET.on&&!failed)netStatus(found?noLink:'No room found with code '+code+'. Check the code, and that the host still has the room screen open.')},15000)});
+    NET.peer.on('error',e=>netStatus(e.type==='peer-unavailable'?'No room found with code '+code+'. Check the code, and that the host still has the room screen open.':'Online error: '+e.type));
   })}
 function netReset(){try{NET.conn&&NET.conn.close()}catch(e){}try{NET.peer&&NET.peer.destroy()}catch(e){}Object.assign(NET,{on:false,conn:null,peer:null,myPick:null,oppPick:null,inMatch:false,wantRematch:[false,false]});RB.on=false}
 function netDrop(msg){if(!NET.on&&!NET.conn)return;netReset();if(mode==='online'){toAttract();show('sOnline');netStatus(msg)}}

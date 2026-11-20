@@ -1,0 +1,10 @@
+PARTY BRAWL - PATCH NOTES v0.2.1
+Released 2026-11-20
+
+ONLINE
+- Added a relay server (Open Relay), so phones on cellular data or work/school Wi-Fi can connect.
+  It runs over normal web ports, so firewalls let it through.
+- Clearer messages when joining: "No room found" now only means a wrong code or a host who has left.
+  If the room is found but the two devices can't link up, the game says so.
+- If the host switches apps (to text the code, say), the room reconnects when they come back.
+- Joining waits 15 seconds instead of 8 before giving up.
