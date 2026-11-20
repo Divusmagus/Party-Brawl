@@ -1,0 +1,31 @@
+PARTY BRAWL - PATCH NOTES v0.2
+Released 2026-11-20
+
+STAGES
+- Town Square (the old flat test stage) is gone. Six stages remain, one per campaign. A proper flat, hazard-free stage may come back later as its own thing.
+- Vogler: new painted background (the burning town, the gate tower, siege engines on the hill).
+  Platforms refitted to the art: house roof, market stall, gate tower top, wall walk.
+  The gate tower's side is now a solid wall between the tower top and the wall walk.
+- Tahoe: new painted background (ruins, the shack, the water tower, the pier and the boat at sunset).
+  Platforms refitted to the art: ruin roof, shack roof, water tower catwalk, pier, boat deck.
+  The old boat-cabin platform is gone (the painted wheelhouse sits too low to stand on).
+  The lake now starts at the shoreline in the painting. Wading shows water round the legs instead of a flat blue box.
+- Vogler: the flaming arrow volley is now hand-drawn: burning arrows in flight, a burst of sparks when one hits,
+  and arrows that stick in the ground and burn (fire catches, flickers, then dies into smoke).
+- Tahoe: the bloatfly is now hand-drawn: it buzzes in, dives to bite, flies off, and bursts in a yellow splat when you hit it.
+
+FIGHTERS
+- Calder Grimm now has hand-drawn pixel art: the character, his rifle round and muzzle flash, syringe darts
+  (bigger, dripping ones for Overdose), and a glass-shatter burst when a dart hits.
+- Calder's chems now show a little icon over whoever they hit while the chem lasts: a dripping scorpion tail
+  (Scorpion Venom), a sleeping moon (Tranquilizer), a peace dove (Pax), a scared face (Yellow Belly), an anger burst (Berserk).
+
+FIXES
+- Online: you can now type the room code on phones and keyboards. Letters that are also fight controls
+  (like R, G and H) were being swallowed by the demo fight running behind the menu.
+
+BALANCE NOTES
+- Vogler still favours Tenebrund a little (about 65%), Tahoe still favours Tedd a little (about 61%). Everyone else is 42-56%.
+
+OTHER
+- The title screen shows the version number. For online play, both players need the same version.
