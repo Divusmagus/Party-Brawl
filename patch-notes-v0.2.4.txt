@@ -1,0 +1,41 @@
+PARTY BRAWL - PATCH NOTES v0.2.4
+(Released 2026-11-20)
+
+VICTORY SCREEN
+- New victory screen: both fighters' portraits (the loser greyed out), the round score, and a side-by-side
+  table of match stats with the better number in each row highlighted: damage dealt, hits landed, longest
+  combo, biggest hit, bars broken, shield breaks, wall splats, supers used, healing, each fighter's top
+  damage move, and the match length and stage.
+- On landscape phones the stats sit beside the buttons so everything fits on one screen.
+
+HUD
+- Health bars, super meters, name plates and round markers are now styled after each fighter's campaign:
+  forged iron and gold with a gem cap (D&D: Storm King's Thunder, Dragon Heist, Dragonlance, Remnants,
+  Princes), blackened iron with an ember glow and spikes (Descent into Avernus), a wooden plank with rope
+  bindings and brass bolts (Through Rough Tides), a green Pip-Boy screen with segments and scanlines
+  (Fallout), an angled cyan holo frame (Traveller), and a candy-cane frame with a snow cap (Christmas).
+  Each side follows its own fighter.
+
+STAGE SELECT (new)
+- After both fighters are locked in, you now pick the stage on its own screen: a picture tile for each
+  stage, plus Random (three stages cut into thirds).
+- Tap a stage to see its hazard, what the ground is like, and which kinds of fighter it favours or is tough for (based on
+  CPU-vs-CPU runs on each stage). Tap again or press Fight to start. Back returns to character select.
+- Online: the host picks. When the guest taps a stage and votes, a VOTE badge shows on the host's screen.
+  The guest sees a HOST badge on whichever stage the host is looking at. Back takes both players to
+  character select.
+- The stage buttons are gone from the character select screen.
+
+CHARACTER SELECT
+- Rebuilt: a grid of fighter portraits only. Tap one to see their details (campaign, role, stats, passive
+  and moves) in a side panel, then press Confirm (local) or Ready (online). Tapping the same fighter
+  twice also confirms. Random shows a random fighter first so you can still back out.
+- Player 1's locked pick stays marked while Player 2 chooses.
+- Phones: a compact header, stage buttons on one swipeable row, and the Confirm button always in reach.
+- New painted portraits for all 12 fighters on the select grid and the victory screen.
+  The details panel shows the fighter's in-game sprite, so you see what they look like in a fight.
+  (Falls back to the sprite for any fighter without one.)
+
+MUSIC
+- Phones: the first tap now unlocks the game's music players, so songs that start by themselves (the
+  victory jingle, a character theme kicking in mid-fight) aren't silently blocked by the browser.
