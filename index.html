@@ -286,12 +286,12 @@ function mv(o){
   return m;
 }
 function normals(o){ // standard light/heavy/air attacks, scaled per fighter
-  const r=o.reach||0,lm=o.light||1;
+  const r=o.reach||0,nm=o.nmul||1,lm=(o.light||1)*nm; // nmul: scales all four normals' damage
   return{
     l:mv({n:'Light',su:5,ac:3,re:9,dmg:38*lm,box:[8,-74,52+r,24],kb:[3,0],hs:15}),
-    h:mv({n:'Heavy',su:12,ac:4,re:18,dmg:82,box:[8,-80,68+r,34],kb:[8,-5],hs:22,mv:[[10,14,3]]}),
+    h:mv({n:'Heavy',su:12,ac:4,re:18,dmg:82*nm,box:[8,-80,68+r,34],kb:[8,-5],hs:22,mv:[[10,14,3]]}),
     al:mv({n:'Air light',su:4,ac:6,re:7,dmg:36*lm,box:[0,-56,50+r,40],kb:[3,2],hs:14}),
-    ah:mv({n:'Air heavy',su:8,ac:5,re:12,dmg:70,box:[-14,-34,66+r,42],kb:[6,-6],hs:22}),
+    ah:mv({n:'Air heavy',su:8,ac:5,re:12,dmg:70*nm,box:[-14,-34,66+r,42],kb:[6,-6],hs:22}),
   };
 }
 function proj(s,a,o){s.proj.push(Object.assign({src:a.mv,o:a.i,x:a.x+a.face*30,y:a.y-60,vx:0,vy:0,g:0,w:20,h:14,life:120,t:0,dmg:40,kb:[4,-1],hs:16,kind:'bullet'},o))}
@@ -300,6 +300,9 @@ function opp(s,f){return s.f[1-f.i]}
 
 
 /* ---- batch 2 tuning ---- */
+const STEADY_T=180,STEADY_MODE='A'; // Big Chief after a union break: 3s of no knockback (A) or full super armour (B)
+const CHIEF_NORM=1.0,HAWK_MUL=1.2,HAWK_KB=1.3,BEAR_SHIELD=0.10; // Big Chief: normals at 80%; the hawk totem gives +20% (back to 96%); the bear's shield is 10% of max HP
+const TOTEMS=[{id:'unicorn',n:'UNICORN TOTEM!',col:'#9bf0a0',hue:0},{id:'bear',n:'BEAR TOTEM!',col:'#d8a060',hue:-95},{id:'hawk',n:'HAWK TOTEM!',col:'#ffd34d',hue:-70}];
 const UNION_BREAK=150,PAX_MUL=1.2,SMOKE_LIFE=240,TOTEM_HEAL=5,TOTEM_DMG=12,DEER_DMG=34,DEER_CD=360,TRAIN_END=52,SMOKE_MISS=[0.5,0.25,0],SMOKE_CRIT=0.3,ACR_DMG=18,TRAIN_V=8.5,TRAIN_BASE=6,TRAIN_PER=1.6,TRAIN_WALL=30,STRIKE_HITS=5,STRIKE_DMG=40,HUG_SQUEEZE=36,HUG_THROW=90,DART_CD=360;
 // Calder's syringer: each dart uses one chem that's ready; that chem then needs DART_CD frames to come back
 const MUSIC={ // song files by slot; null = no song yet, so the code-made chiptune plays
@@ -314,12 +317,21 @@ const hasTheme=ci=>!!MUSIC.themes[CH[ci].id];
 const CRAFT_MIN=720,CRAFT_VAR=481,JET_T=360,MEDX_T=360,JET_SPD=1.25,MEDX_TAKE=0.75,STIM_HEAL=0.07; // Calder's Field Chemist: 12-20s between crafts, 6s effects
 const CHEM_SHOW=[240,50,300,60,300]; // how long each chem's icon floats over them (frames)
 const CHEMS=[
- {n:'SCORPION VENOM!',col:'#9bd35a',fx:(s,a,d)=>{d.poison=240}},
+ {n:'SCORPION VENOM!',col:'#9bd35a',fx:(s,a,d)=>{d.poison=Math.max(d.poison,240)}},
  {n:'TRANQUILIZER!',col:'#8fc8ff',fx:(s,a,d)=>{d.st='stun';d.t=0;d.stunLen=50;d.softStun=1;d.mv=null;d.vx=0}},
- {n:'PAX!',col:'#ffd0e8',fx:(s,a,d)=>{d.pax=300}},
+ {n:'PAX!',col:'#ffd0e8',fx:(s,a,d)=>{d.pax=Math.max(d.pax,300)}},
  {n:'YELLOW BELLY!',col:'#ffe24a',fx:(s,a,d)=>{const w=CH[d.c].weight,dir=d.x>=a.x?1:-1;d.vx=dir*15/w;d.vy=-9/w;d.ground=false;d.launched=1;if(Math.abs(d.vx)>9)d.splat=0}},
- {n:'BERSERK!',col:'#ff5a3a',fx:(s,a,d)=>{d.berserk=300}}];
+ {n:'BERSERK!',col:'#ff5a3a',fx:(s,a,d)=>{d.berserk=Math.max(d.berserk,300)}}];
 function inSmoke(s,f,owner){const h=hurt(f);return s.zones.some(z=>z.k==='smoke'&&z.o===owner&&ov([z.x-z.w/2,z.y-z.h,z.w,z.h],h)&&!doorBetween(s,z.x,f.x))}
+const OD_T=[240,50,300,0,300]; // Overdose chem durations (frames): venom, tranq stun, pax, Yellow Belly's slow (none), berserk = the normal ones. Tested: 2x durations put Calder at ~66%, 1.5x at ~65%, these at ~57%
+function odChem(s,a,d,q){ // an Overdose dart's chem: lasts twice as long; if that effect is still on them, it stacks (double strength) and the timer resets
+  if(d.st==='ko')return;s.fx.push({k:'cdhit',x:d.x,y:d.y-62,life:18,t:0});let st=false;
+  if(q===0){st=d.poison>0;d.poison=OD_T[0];d.poisonLv=st?2:Math.max(1,d.poisonLv||0)}
+  else if(q===1){st=d.st==='stun'&&d.softStun;d.st='stun';d.t=0;d.stunLen=OD_T[1];d.softStun=1;d.mv=null;d.vx=0}
+  else if(q===2){st=d.pax>0;d.pax=OD_T[2];d.paxLv=st?2:Math.max(1,d.paxLv||0)}
+  else if(q===3){st=!!d.ybT&&s.frame-d.ybT<300;CHEMS[3].fx(s,a,d);if(st){d.vx*=1.5;d.vy*=1.3}d.ybT=s.frame;if(OD_T[3]){d.slow=OD_T[3];d.slowLv=st?2:1}} // a repeat within 5s knocks them back harder
+  else{st=d.berserk>0;d.berserk=OD_T[4]}
+  d.chemQ=q;d.chemEnd=s.frame+CHEM_SHOW[q]*2;say(s,d.x,d.y-120,CHEMS[q].n.replace('!','')+(st?' x2!':'!'),CHEMS[q].col,st?32:26)}
 function chem(s,a,d,any){ // pick a chem: a ready one (or any one, for Overdose)
   s.fx.push({k:'cdhit',x:d.x,y:d.y-62,life:18,t:0});
   const ready=[0,1,2,3,4].filter(q=>any||a.dfx[q]<=0);if(!ready.length)return;
@@ -430,9 +442,11 @@ const CH=[
     tick:(s,a,f)=>{if(f===20){proj(s,a,{kind:'rifle',y:a.y-66,vx:a.face*20,w:24,h:8,life:60,dmg:105,kb:[7,-3],hs:20});s.fx.push({k:'cmuzzle',x:a.x+a.face*52,y:a.y-66,col:'#ffd34d',life:8,t:0})}}}),
   s2:mv({n:'Syringer',d:'Fires a dart loaded with a random chem: Scorpion Venom (poison), Tranquilizer (stun), Pax (takes 20% more damage), Yellow Belly (big knockback) or Berserk (can\'t block). Each chem needs 6s to come back once used',su:10,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:80,
     tick:(s,a,f)=>{if(f===10)proj(s,a,{kind:'dart',y:a.y-64,vx:a.face*12,w:20,h:8,life:90,dmg:28,kb:[3,-1],hs:16,onHit:(s,a,d)=>chem(s,a,d,false)})}}),
-  su:mv({n:'Overdose',d:'Six syringes in a row, each with a random chem',su:12,ac:1,re:20,len:74,dmg:0,box:[0,0,0,0],inv:[0,12],
+  su:mv({n:'Overdose',d:'Six syringes: the first five are all five chems in a random order, the sixth is random. Chems get through a block (and hit the shield twice as hard), and a repeat chem stacks: double strength, timer reset',su:12,ac:1,re:20,len:74,dmg:0,box:[0,0,0,0],inv:[0,12],
     start:(s,a)=>say(s,a.x,a.y-130,'TIME FOR YOUR MEDICINE!','#9bf0a0',36),
-    tick:(s,a,f)=>{if(f>=12&&f<=52&&(f-12)%8===0)proj(s,a,{kind:'dart',big:1,y:a.y-(f%16?78:56),vx:a.face*13,w:22,h:9,life:90,dmg:30,kb:[3,-1],hs:16,onHit:(s,a,d)=>chem(s,a,d,true)})}}),
+    tick:(s,a,f)=>{if(f===12){const b=[0,1,2,3,4];for(let k=4;k>0;k--){const j=Math.floor(rngNext(s)*(k+1));[b[k],b[j]]=[b[j],b[k]]}a.odBag=b} // darts 1-5: each chem once, shuffled
+      if(f>=12&&f<=52&&(f-12)%8===0){const n=(f-12)/8,q=n<5?a.odBag[n]:Math.floor(rngNext(s)*5); // dart 6: any chem (a repeat stacks)
+        proj(s,a,{kind:'dart',big:1,y:a.y-(f%16?78:56),vx:a.face*13,w:22,h:9,life:90,dmg:30,kb:[3,-1],hs:16,odq:q,pierce:1,shieldMul:2,onHit:(s,a,d,p)=>odChem(s,a,d,p.odq)})}}}),
  })},
 {id:'heavyrail',name:'Heavy Rail',player:'Matt',camp:'Fallout',role:'Heavy',types:{s1:'Energy',s2:'Energy',su:'Explosive'},
  passive:{n:'Power Armor',d:'Takes 25% less knockback from everything'},kbMul:0.75,suAny:1,farS1:0.14,
@@ -507,12 +521,14 @@ const CH=[
  passive:{n:'Union Break',d:'Once a round, when he drops below 30% health, he takes a mandated 2.5s break: untouchable, and heals 25% of his health'},suAny:1,farS1:0.18,
  col:'#c0392b',col2:'#2e7d32',skin:'#f0c8a0',w:38,h:80,hp:1100,spd:4.5,jump:-16,weight:0.85,pow:1.27,
  blurb:'Elf union leader and shepherd druid. Has a picket sign. Will strike.',
- moves:Object.assign(normals({reach:16,light:1.2}),{
+ moves:Object.assign(normals({reach:16,light:1.2,nmul:CHIEF_NORM}),{
   s1:mv({n:'Reindeer Stampede',d:'Whistles up a horde of four reindeer that charge across the arena. Each one can hit once. Long cooldown',su:12,ac:1,re:14,len:34,dmg:0,box:[0,0,0,0],cd:DEER_CD,
     start:(s,a)=>say(s,a.x,a.y-120,'ON DASHER!','#e9c46a',26),
     tick:(s,a,f)=>{if(f>=12&&f<=30&&(f-12)%6===0){const k=(f-12)/6;proj(s,a,{kind:'deer',n:k,x:a.x-a.face*20,y:a.y-34-(k%2)*16,vx:a.face*(8+k*0.4),w:46,h:40,life:140,dmg:DEER_DMG,kb:[4,-2],hs:12})}}}),
-  s2:mv({n:'Spirit Totem',d:'Plants a spirit totem for 6s. Near it he slowly heals, and enemies nearby are slowed and take a little damage',su:16,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:480,
-    tick:(s,a,f)=>{if(f===16){s.zones=s.zones.filter(z=>!(z.k==='totem'&&z.o===a.i));s.zones.push({k:'totem',o:a.i,x:a.x,y:a.y,r:110,life:360,tk:0});say(s,a.x,a.y-115,'SPIRIT TOTEM!','#9bf0a0',26)}}}),
+  s2:mv({n:'Spirit Totem',d:'Plants one of three spirit totems for 6s, in a shuffled cycle (all three before any repeats). Unicorn: heals him while he stays near it and slows enemies nearby. Bear: a grey shield of 10% of his health that fades when the totem does, and enemies nearby take a little damage. Hawk: while he stays near it his attacks hit 20% harder and knock back further',su:16,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:480,
+    tick:(s,a,f)=>{if(f===16){if(!a.totemBag||!a.totemBag.length){const b=[0,1,2];for(let k=2;k>0;k--){const j=Math.floor(rngNext(s)*(k+1));[b[k],b[j]]=[b[j],b[k]]}a.totemBag=b} // a shuffled cycle: all three forms before any repeats
+      const form=TOTEMS[a.totemBag.shift()];s.zones=s.zones.filter(z=>!(z.k==='totem'&&z.o===a.i));s.zones.push({k:'totem',form:form.id,o:a.i,x:a.x,y:a.y,r:110,life:360,tk:0});say(s,a.x,a.y-115,form.n,form.col,26);
+      if(form.id==='bear'){a.temp=Math.round(a.maxHp*BEAR_SHIELD);a.tempT=360}}}}), // the bear's shield: once per cast, never refills, gone when the totem goes
   su:mv({n:'General Strike!',d:'A picket line of union elves marches across the whole arena, shoving and hitting anyone in the way. Unblockable',su:18,ac:1,re:20,len:60,dmg:0,box:[0,0,0,0],inv:[0,18],
     start:(s,a)=>say(s,a.x,a.y-130,'EVERYBODY OUT!','#f2b134',44),
     tick:(s,a,f)=>{if(f===18)s.zones.push({k:'strike',o:a.i,x:a.face>0?-60:W+60,vx:a.face*6.5,w:140,life:240,tk:0,cd:0,n:0})}}),
@@ -524,7 +540,7 @@ const DASK_NORMALS={l:53,h:115};{const dm=CH.find(c=>c.id==='dask').moves;dm.l.d
 CH.forEach((c,i)=>{c.i=i});
 
 /* ---------- state ---------- */
-function newFighter(i,ci,x){const c=CH[ci];return{i,c:ci,x,y:floorY(x),pitT:0,vx:0,vy:0,face:i?-1:1,hp:c.hp,maxHp:c.hp,bubLock:0,missStreak:0,missed:-1,poison:0,burn:0,pax:0,berserk:0,softStun:0,brk:0,brkUsed:0,dfx:[0,0,0,0,0],bars:2,calm:0,healLock:c.hp,healLeft:0,temp:0,hwT:0,hwLock:0,stunLen:130,meter:0,st:'idle',t:0,mv:null,mf:0,hitMask:0,md:{},
+function newFighter(i,ci,x){const c=CH[ci];return{i,c:ci,x,y:floorY(x),pitT:0,vx:0,vy:0,face:i?-1:1,hp:c.hp,maxHp:c.hp,bubLock:0,missStreak:0,missed:-1,poison:0,poisonLv:0,hawk:0,steady:0,tempT:0,burn:0,pax:0,paxLv:0,slowLv:0,berserk:0,softStun:0,brk:0,brkUsed:0,dfx:[0,0,0,0,0],bars:2,calm:0,healLock:c.hp,healLeft:0,temp:0,hwT:0,hwLock:0,stunLen:130,meter:0,st:'idle',t:0,mv:null,mf:0,hitMask:0,md:{},
   hst:0,bst:0,inv:0,armor:0,counter:0,hex:0,muddle:0,reckless:0,demonStreak:0,shield:100,walkArmorCd:0,dmgLog:{},punLog:{},slow:0,haste:0,drop:0,jumps:0,ground:true,prev:0,cd:{s1:0,s2:0},combo:0,splat:0,launched:0,grab:-1,wins:0}}
 /* ---------- stage hazards ---------- */
 const UNDA={every:1200,vary:180,chance:0.25,warn:75,act:40,dmg:150}; // ~20s (+/-3s) a roll; 25% Unda bursts from the vortex
@@ -644,7 +660,7 @@ function monkeyShield(s,a,d,dir){ // Salty's passive: Bubbles takes the hit and 
 function deal(s,a,d,dmg,src,type){
   if(d.brk>0)return 0; // on a union break: untouchable
   type=type||dmgType(a,src);const rs=CH[d.c].resist;
-  const core=dmg*(d.reckless>0?1.2:1)*(d.pax>0?PAX_MUL:1)*(d.medx>0?MEDX_TAKE:1)*(a&&a!==d&&a.muddle>0?0.75:1);
+  const core=dmg*(a&&a!==d&&a.hawk>0?HAWK_MUL:1)*(d.reckless>0?1.2:1)*(d.pax>0?1+(PAX_MUL-1)*(d.paxLv||1):1)*(d.medx>0?MEDX_TAKE:1)*(a&&a!==d&&a.muddle>0?0.75:1);
   const hexBonus=d.hex>0?core*0.16*(rs&&rs.Dark?1-rs.Dark:1):0; // the hex's extra damage is always Dark, whatever the hit was
   dmg=Math.round(core*(rs&&rs[type]?1-rs[type]:1)+hexBonus);
   if(d.temp>0&&dmg>0){const ab=Math.min(d.temp,dmg);d.temp-=ab;dmg-=ab;if(d.temp<=0)s.fx.push({k:'spark',x:d.x,y:d.y-60,col:'#c8c8d0',life:10,t:0})}
@@ -667,6 +683,7 @@ function hitF(s,a,d,o){
   if(a&&a!==d&&!o.unb&&o.src!=='su'&&CH[d.c].id==='owen'&&inSmoke(s,d,d.i)){ // can't hit what you can't see; misses get less likely in a row
     if(rngNext(s)<SMOKE_MISS[Math.min(SMOKE_MISS.length-1,d.missStreak)]){d.missStreak++;d.missed=s.frame;s.fx.push({k:'omiss',x:d.x,y:d.y-50,life:18,t:0,col:'#cfd6e0'});say(s,d.x,d.y-115,'MISS!','#cfd6e0',24);return false}
     d.missStreak=0}
+  if(a&&a!==d&&a.hawk>0&&o.kb)o=Object.assign({},o,{kb:[o.kb[0]*HAWK_KB,o.kb[1]*HAWK_KB]}); // Big Chief in his hawk totem: hits knock back harder
   if(a&&a!==d&&CH[a.c].id==='owen'&&inSmoke(s,d,a.i)&&rngNext(s)<SMOKE_CRIT){o=Object.assign({},o,{dmg:o.dmg*2,kb:[o.kb[0]*1.25,o.kb[1]*1.25]});s.fx.push({k:'ocrit',x:d.x,y:d.y-50,life:20,t:0,col:'#ff5a3a'});say(s,d.x,d.y-135,'CRIT!','#ff5a3a',30)} // thermal scope
   const dir=o.dir||(d.x>=(a?a.x:d.x)?1:-1);
   if(d.counter>0&&!o.unb&&a&&a!==d){ // Feng's Divine Decree
@@ -707,11 +724,12 @@ function hitF(s,a,d,o){
     d.armor=0;say(s,d.x,d.y-110,'ARMOR BROKEN!','#ff8a3d',28);s.fx.push({k:'ring',x:d.x,y:d.y-50,life:16,t:0,col:'#cfd6e0',small:true})}
   if(a&&a!==d){a.combo=(d.st==='hit'||d.st==='grabbed')?a.combo+1:1;if(a.combo>=3)say(s,a.x,a.y-140,a.combo+' HITS','#ffd34d',24);if(s.stats){const st=s.stats[a.i];st.hits=(st.hits||0)+1;st.combo=Math.max(st.combo||0,a.combo)}}
   if(d.st==='grabbed')return true;
+  if(d.steady>0&&STEADY_MODE==='B'){say(s,d.x,d.y-100,'STEADY','#f2b134',18);return true} // after a union break (B): takes the damage, doesn't flinch
   const w=CH[d.c].weight;
   d.st='hit';d.t=0;d.mv=null;d.hst=o.hs;d.counter=0;
-  const km=CH[d.c].kbMul||1;d.vx=dir*o.kb[0]/w*km;d.vy=o.kb[1]/w*km;
+  const km=(CH[d.c].kbMul||1)*(d.steady>0?0:1);d.vx=dir*o.kb[0]/w*km;d.vy=o.kb[1]/w*km; // standing firm after a union break: no knockback
   if(d.vy<0)d.ground=false;
-  d.launched=(o.launch||o.kb[1]<=-7)?1:0;
+  d.launched=d.steady>0?0:(o.launch||o.kb[1]<=-7)?1:0;
   if(Math.abs(d.vx)>9)d.splat=0;
   return true;
 }
@@ -783,7 +801,7 @@ function control(s,f,inp){
   if(pr&K.LP)return startMove(s,f,f.ground?'l':'al');
   const dir=((inp&K.R)?1:0)-((inp&K.L)?1:0);
   const wind=STAGE.hazard==='wind'&&s.hz?s.hz.w:0;
-  const spd=c.spd*(f.slow>0?0.55:1)*(f.haste>0?1.35:1)*(f.muddle>0?0.7:1)*(f.berserk>0?1.15:1)*(f.jet>0?JET_SPD:1)*(dir?1+WIND.k*wind*dir:1); // with the wind: faster; into it: slower
+  const spd=c.spd*(f.slow>0?(f.slowLv>1?0.35:0.55):1)*(f.haste>0?1.35:1)*(f.muddle>0?0.7:1)*(f.berserk>0?1.15:1)*(f.jet>0?JET_SPD:1)*(dir?1+WIND.k*wind*dir:1); // with the wind: faster; into it: slower
   if(f.ground){
     if(((pr&K.D)||((inp&(K.B|K.D))&&(pr&K.U)))&&onPlat(f)){f.drop=14;f.ground=false;f.y+=2;f.st='jump';return} // tap Down on a platform to drop through (Block + Jump still works too)
     if((inp&(K.B|K.D))&&!(f.berserk>0)&&f.shield>0){f.st='block';f.vx=0;return} // Block, or holding Down, blocks
@@ -857,8 +875,8 @@ function tickProj(s){
     if(p.betrayAt&&p.t===p.betrayAt){p.vx=-p.vx*1.2;p.bad=1;say(s,p.x,p.y-40,'...UH OH','#ff6a5a',24)}
     const owner=s.f[p.o],tgt=p.bad?owner:s.f[1-p.o];
     if(p.life>0&&!p.noHit&&p.miss!==tgt.i&&ov([p.x-p.w/2,p.y-p.h/2,p.w,p.h],hurt(tgt))){
-      if(hitF(s,p.bad?null:owner,tgt,{dmg:p.dmg*CH[owner.c].pow*(p.falloff?Math.max(0.4,1-p.t*Math.abs(p.vx)/600):1),kb:p.kb,hs:p.hs,launch:p.launch,dir:p.vx>=0?1:-1,src:p.src,shieldMul:p.kind==='bullet'?0.5:1})){p.life=0;if(p.kind==='deer')s.fx.push({k:'cdpoof',x:p.x,y:p.y+34+(p.n%2)*16,dir:Math.sign(p.vx)||1,red:p.n===0,life:24,t:0});if(p.kind==='shiplaser')s.fx.push({k:'olhit',x:p.x,y:p.y,life:16,t:0});if(p.kind==='plasma')s.fx.push({k:'hrplasma',x:p.x,y:p.y,life:18,t:0});
-        if(p.onHit&&(tgt.st==='hit'||tgt.st==='down'))p.onHit(s,owner,tgt,p)}
+      if(hitF(s,p.bad?null:owner,tgt,{dmg:p.dmg*CH[owner.c].pow*(p.falloff?Math.max(0.4,1-p.t*Math.abs(p.vx)/600):1),kb:p.kb,hs:p.hs,launch:p.launch,unb:p.unb,dir:p.vx>=0?1:-1,src:p.src,shieldMul:p.shieldMul||(p.kind==='bullet'?0.5:1)})){p.life=0;if(p.kind==='deer')s.fx.push({k:'cdpoof',x:p.x,y:p.y+34+(p.n%2)*16,dir:Math.sign(p.vx)||1,red:p.n===0,life:24,t:0});if(p.kind==='shiplaser')s.fx.push({k:'olhit',x:p.x,y:p.y,life:16,t:0});if(p.kind==='plasma')s.fx.push({k:'hrplasma',x:p.x,y:p.y,life:18,t:0});
+        if(p.onHit&&(tgt.st==='hit'||tgt.st==='down'||(p.pierce&&(tgt.st==='bstun'||tgt.st==='stun'))))p.onHit(s,owner,tgt,p)}
       else if(tgt.missed===s.frame)p.miss=tgt.i;
     }
     if(p.kind==='nade'){for(const pl of PLATS)if(p.vy>0&&p.y>=pl.y&&p.y-p.vy<=pl.y&&p.x>pl.x&&p.x<pl.x+pl.w){p.life=0;p.y=pl.y}
@@ -876,7 +894,7 @@ function tickProj(s){
     const owner=s.f[z.o],tgt=s.f[1-z.o];
     if(z.k==='stink'){
       z.life--;z.tk++;
-      if(ov([z.x-z.w/2,z.y-z.h,z.w,z.h],hurt(tgt))&&tgt.st!=='ko'&&!doorBetween(s,z.x,tgt.x)){tgt.slow=12;if(z.tk%30===0&&s.phase==='fight'){deal(s,owner,tgt,12,'s2');s.fx.push({k:'spark',x:tgt.x,y:tgt.y-70,col:'#9bd35a',life:10,t:0})}}
+      if(ov([z.x-z.w/2,z.y-z.h,z.w,z.h],hurt(tgt))&&tgt.st!=='ko'&&!doorBetween(s,z.x,tgt.x)){tgt.slow=Math.max(tgt.slow,12);if(z.tk%30===0&&s.phase==='fight'){deal(s,owner,tgt,12,'s2');s.fx.push({k:'spark',x:tgt.x,y:tgt.y-70,col:'#9bd35a',life:10,t:0})}}
     }else if(z.k==='demon'){
       z.t++;z.life--;if(z.swipe>0)z.swipe--;if(z.cd>0)z.cd--;if(z.drop>0)z.drop--;
       if(z.betray&&z.t===z.betray){z.bad=1;say(s,z.x,z.y-90,'...UH OH','#ff6a5a',26)}
@@ -929,8 +947,11 @@ function tickProj(s){
       if(tgt.st!=='ko'&&ov([z.x-z.w/2,z.y-z.h,z.w,z.h],hurt(tgt))&&!doorBetween(s,z.x,tgt.x))tgt.slow=Math.max(tgt.slow,12);
     }else if(z.k==='totem'){ // Big Chief's spirit totem: heals him while he stays near it
       z.life--;z.tk++;
-      if(tgt.st!=='ko'&&z.tk%30===0&&s.phase==='fight'&&!doorBetween(s,z.x,tgt.x)&&Math.abs(tgt.x-z.x)<z.r&&Math.abs(tgt.y-z.y)<120){deal(s,owner,tgt,TOTEM_DMG*CH[owner.c].pow,'s2');tgt.slow=Math.max(tgt.slow,20);s.fx.push({k:'spark',x:tgt.x,y:tgt.y-60,col:'#9bf0a0',life:10,t:0})}
-      if(owner.st!=='ko'&&owner.brk<=0&&Math.abs(owner.x-z.x)<z.r&&Math.abs(owner.y-z.y)<120&&z.tk%12===0&&owner.hp<owner.maxHp){owner.hp=Math.min(owner.maxHp,owner.hp+TOTEM_HEAL);if(z.tk%48===0)s.fx.push({k:'ring',x:owner.x,y:owner.y-30,life:16,t:0,col:'#9bf0a0',small:true})}
+      const near=owner.st!=='ko'&&Math.abs(owner.x-z.x)<z.r&&Math.abs(owner.y-z.y)<120&&!doorBetween(s,z.x,owner.x); // no slow or damage on enemies, whichever form
+      if(z.form==='hawk'&&near)owner.hawk=2; // hawk: +20% damage and +30% knockback on all his attacks while he's in it
+      if(z.form==='unicorn'&&tgt.st!=='ko'&&Math.abs(tgt.x-z.x)<z.r&&Math.abs(tgt.y-z.y)<120&&!doorBetween(s,z.x,tgt.x))tgt.slow=Math.max(tgt.slow,20); // unicorn: enemies nearby are slowed
+      if(z.form==='bear'&&tgt.st!=='ko'&&z.tk%30===0&&s.phase==='fight'&&!doorBetween(s,z.x,tgt.x)&&Math.abs(tgt.x-z.x)<z.r&&Math.abs(tgt.y-z.y)<120){deal(s,owner,tgt,TOTEM_DMG*CH[owner.c].pow,'s2');s.fx.push({k:'spark',x:tgt.x,y:tgt.y-60,col:'#d8a060',life:10,t:0})} // bear: chips enemies nearby (no slow)
+      if(z.form==='unicorn'&&near&&owner.brk<=0&&z.tk%12===0&&owner.hp<owner.maxHp){owner.hp=Math.min(owner.maxHp,owner.hp+TOTEM_HEAL);if(z.tk%48===0)s.fx.push({k:'ring',x:owner.x,y:owner.y-30,life:16,t:0,col:'#9bf0a0',small:true})}
       if(owner.st==='ko')z.life=0;
     }else if(z.k==='strike'){ // General Strike: a picket line of elves marches across the arena
       z.life--;z.tk++;z.x+=z.vx;if(z.cd>0)z.cd--;
@@ -979,9 +1000,11 @@ function step(s,inputs){
   for(const f of s.f){
     f.t++;
     if(s.phase==='fight'&&f.st!=='ko'){const foe=s.f[1-f.i]; // damage over time: Calder's scorpion venom, Tedd's burning
-      if(f.poison>0&&f.poison%30===1){deal(s,foe,f,10,'s2','Poison');s.fx.push({k:'spark',x:f.x,y:f.y-60,col:'#9bd35a',life:10,t:0})}
+      if(f.poison>0&&f.poison%30===1){deal(s,foe,f,10*(f.poisonLv||1),'s2','Poison');s.fx.push({k:'spark',x:f.x,y:f.y-60,col:'#9bd35a',life:10,t:0})}
       if(f.burn>0&&f.burn%20===1){deal(s,foe,f,8,'s1','Fire');s.fx.push({k:'spark',x:f.x,y:f.y-60,col:'#ff8a1a',life:10,t:0})}}
-    for(const k of['hst','bst','inv','counter','hex','slow','haste','drop','muddle','walkArmorCd','reckless','bubLock','poison','burn','pax','berserk'])if(f[k]>0)f[k]--;
+    for(const k of['hst','bst','inv','counter','hex','slow','haste','drop','muddle','walkArmorCd','reckless','bubLock','poison','burn','pax','berserk','steady'])if(f[k]>0)f[k]--;
+    if(f.hawk>0)f.hawk--;if(f.tempT>0&&--f.tempT===0&&f.temp>0){f.temp=0;s.fx.push({k:'spark',x:f.x,y:f.y-60,col:'#d8a060',life:12,t:0})} // the bear's shield fades
+    if(!(f.poison>0))f.poisonLv=0;if(!(f.pax>0))f.paxLv=0;if(!(f.slow>0))f.slowLv=0; // stacks end with their effect
     for(let q=0;q<5;q++)if(f.dfx[q]>0)f.dfx[q]--;
     if(s.phase==='fight'&&CH[f.c].id==='chief'&&!f.brkUsed&&f.hp>0&&f.hp<f.maxHp*0.3&&['idle','walk','jump','block'].includes(f.st)&&f.ground){ // Union Break
       f.brkUsed=1;f.brk=UNION_BREAK;f.st='break';f.t=0;f.vx=0;f.mv=null;say(s,f.x,f.y-130,'UNION BREAK!','#f2b134',36);s.fx.push({k:'ring',x:f.x,y:f.y-40,life:20,t:0,col:'#f2b134',small:true})}
@@ -1006,7 +1029,7 @@ function step(s,inputs){
     else if(f.st==='hit'&&f.hst<=0&&f.launched&&f.t>90){f.launched=0}
     else if(f.st==='bstun'&&f.bst<=0)f.st='idle';
     else if(f.st==='stun'&&f.t>=f.stunLen){f.st='idle';if(!f.softStun)f.shield=35;f.softStun=0;f.stunLen=130}
-    else if(f.st==='break'){f.inv=Math.max(f.inv,2);f.hp=Math.min(f.maxHp,f.hp+f.maxHp*0.25/UNION_BREAK);if(--f.brk<=0){f.brk=0;f.st='idle';f.inv=20;say(s,f.x,f.y-120,'BACK TO WORK','#f2b134',24)}}
+    else if(f.st==='break'){f.inv=Math.max(f.inv,2);f.hp=Math.min(f.maxHp,f.hp+f.maxHp*0.25/UNION_BREAK);if(--f.brk<=0){f.brk=0;f.st='idle';f.inv=20;f.steady=STEADY_T;say(s,f.x,f.y-120,'BACK TO WORK','#f2b134',24)}} // then a few seconds of standing firm (f.steady)
     else if(f.st==='down'&&f.t>=32){f.st='idle';f.inv=20;f.splat=0}
     else if(f.st==='grind'&&f.hug){ // Tedd's super: WANNA BE FRIENDS?
       const d=s.f[f.grab];f.inv=Math.max(f.inv,2);
@@ -2090,7 +2113,7 @@ function drawFighter(f,tagCol,tag){
   g.font='600 13px Rubik,sans-serif';g.textAlign='center';g.fillStyle=tagCol;g.fillText(tag,f.x,f.y-c.h-36);
   if(f.reckless>0&&f.st!=='ko'&&!(f.muddle>0)){g.font='16px Bangers,Impact,sans-serif';g.fillStyle='#ff6a5a';g.strokeStyle='#000';g.lineWidth=4;g.strokeText('RECKLESS',f.x,f.y-c.h-52);g.fillText('RECKLESS',f.x,f.y-c.h-52)}
   drawHRFx(f,c);
-  {const tags=[];if(f.brk>0)tags.push(['ON BREAK','#f2b134']);if(f.jet>0)tags.push(['JET','#7fd0ff']);if(f.medx>0)tags.push(['MED-X','#ff9ab0']);if(f.berserk>0)tags.push(['BERSERK','#ff5a3a']);if(f.pax>0)tags.push(['PAX','#ffd0e8']);if(f.poison>0)tags.push(['POISONED','#9bd35a']);if(f.burn>0)tags.push(['BURNING','#ff8a1a']);
+  {const tags=[];if(f.brk>0)tags.push(['ON BREAK','#f2b134']);if(f.steady>0)tags.push(['STANDING FIRM','#f2b134']);if(f.jet>0)tags.push(['JET','#7fd0ff']);if(f.medx>0)tags.push(['MED-X','#ff9ab0']);if(f.berserk>0)tags.push(['BERSERK','#ff5a3a']);if(f.pax>0)tags.push(['PAX','#ffd0e8']);if(f.poison>0)tags.push(['POISONED','#9bd35a']);if(f.burn>0)tags.push(['BURNING','#ff8a1a']);
     let ty=f.y-c.h-(f.reckless>0||f.muddle>0?70:52);
     if(f.chemEnd>S.frame&&f.st!=='ko'&&fxOn('cchem')){const d=40,iy=ty-6;fxCell(fxOn('cchem'),(Math.floor(S.frame/6)%6)*160,f.chemQ*160,160,160,f.x-d/2,iy-d/2-8,d,d);ty-=34}g.font='16px Bangers,Impact,sans-serif';g.textAlign='center';g.lineWidth=4;g.strokeStyle='#000';
     for(const[tx,col]of tags){if(f.st==='ko')break;g.fillStyle=col;g.strokeText(tx,f.x,ty);g.fillText(tx,f.x,ty);ty-=17}
@@ -2191,10 +2214,12 @@ function drawZone(z){
     if(z.tk<36){r=0;c=Math.floor(z.tk/6)}else if(z.life<36){r=2;c=Math.min(5,Math.floor((36-z.life)/6))}
     g.save();g.globalAlpha=0.8;fxCell(im,c*180,r*180,180,180,z.x-90*sx,z.y-168*sy,180*sx,180*sy);g.restore();return}
   if(z.k==='smoke'){const a=Math.min(1,z.tk/12,z.life/30);g.save();g.globalAlpha=0.55*a;for(let i=0;i<9;i++){const q=i*0.7+z.tk*0.015,x=z.x+Math.cos(q*1.3)*z.w*0.33,y=z.y-z.h*0.42+Math.sin(q)*z.h*0.3;g.fillStyle=i%2?'#b8bec8':'#d6dbe2';g.beginPath();g.arc(x,y,44+6*Math.sin(z.tk*0.05+i),0,7);g.fill()}g.restore();return}
-  if(z.k==='totem'&&fxOn('cfx')){const im=fxOn('cfx'),a=Math.min(1,z.tk/15,z.life/20),K=0.78,d=210*K;
-    g.save();g.globalAlpha=0.18*a;g.fillStyle='#9bf0a0';g.beginPath();g.ellipse(z.x,z.y,z.r,20,0,0,7);g.fill();g.restore(); // the real reach
+  if(z.k==='totem'&&fxOn('cfx')){const im=fxOn('cfx'),a=Math.min(1,z.tk/15,z.life/20),K=0.78,d=210*K,T=TOTEMS.find(t=>t.id===(z.form||'unicorn'));
+    g.save();g.globalAlpha=0.2*a;g.fillStyle=T.col;g.beginPath();g.ellipse(z.x,z.y,z.r,20,0,0,7);g.fill();g.globalAlpha=0.5*a;g.strokeStyle=T.col;g.lineWidth=2;g.stroke();g.restore(); // the real reach, in the form's colour
     let r=1,c=Math.floor(z.tk/6)%8;if(z.tk<24){r=0;c=Math.floor(z.tk/4)}else if(z.life<24){r=2;c=Math.min(5,Math.floor((24-z.life)/4))}
-    fxCell(im,c*210,r*210,210,210,z.x-d/2,z.y-198*K,d,d);return}
+    g.save();if(T.hue)g.filter=`hue-rotate(${T.hue}deg) saturate(1.3)`;fxCell(im,c*210,r*210,210,210,z.x-d/2,z.y-198*K,d,d);g.restore(); // placeholder: bear/hawk reuse the unicorn totem art, recoloured
+    if(z.form!=='unicorn'){g.save();g.globalAlpha=a;g.font='22px Bangers,Impact,sans-serif';g.textAlign='center';g.lineWidth=3;g.strokeStyle='#000';g.fillStyle=T.col;const lb=z.form==='bear'?'BEAR':'HAWK';g.strokeText(lb,z.x,z.y-170*K);g.fillText(lb,z.x,z.y-170*K);g.restore()}
+    return}
   if(z.k==='totem'){const a=Math.min(1,z.tk/15,z.life/20);g.save();g.globalAlpha=0.25*a;g.fillStyle='#9bf0a0';g.beginPath();g.ellipse(z.x,z.y,z.r,22,0,0,7);g.fill();g.globalAlpha=a;
     g.strokeStyle='#9bf0a0';g.lineWidth=2;g.beginPath();g.ellipse(z.x,z.y,z.r,22,0,0,7);g.stroke();
     poly([z.x-8,z.y,z.x+8,z.y,z.x+6,z.y-70,z.x-6,z.y-70],'#8a6a42',2);circ(z.x,z.y-78,11,'#c9e8c0',2);poly([z.x+4,z.y-86,z.x+9,z.y-104,z.x+10,z.y-84],'#f6f2ea',1.5);g.fillStyle='#2a1a10';g.fillRect(z.x+3,z.y-81,2,2);
@@ -2865,7 +2890,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){netSend({t:'select'});netGoSelect(
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.5'; // shown on the title screen; online players must match
+const VERSION='0.2.6'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 (function checkForUpdate(){ // phones cache the page: if the copy on the server is newer, say so

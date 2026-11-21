@@ -1,0 +1,41 @@
+PARTY BRAWL - PATCH NOTES v0.2.6
+(Released 2026-11-20)
+
+CALDER GRIMM: OVERDOSE REWORK
+- Before: blocking Overdose shut it down completely. The chems never applied and the darts did almost
+  no chip damage, so his super did little against anyone who blocked.
+- Now:
+  - The first five darts are all five chems in a random order (no repeats). The sixth dart is fully
+    random.
+  - A chem that hits while that same effect is still active STACKS: double strength and its timer
+    resets. Example: a second Pax means +40% damage taken; a second Venom poisons twice as hard; a
+    second Yellow Belly knocks them back harder.
+  - Missed darts matter: if you miss one, the sixth dart might roll the chem you missed, so it
+    can't double up.
+  - Overdose chems get through a block, and its darts hit the shield twice as hard.
+  - Chem durations are unchanged.
+- Normal Syringer darts can no longer shorten a longer effect that's already on the target.
+- Balance (CPU tests, all stages): Calder 44% -> ~57%. He still deals the least total damage on the
+  roster; the gain comes from the chems landing. Hardest matchup is still Tedd (~28%, was 17-19%).
+- Tested and rejected: doubled durations (~66%) and 1.5x durations (~65%) made him too strong.
+
+BIG CHIEF: SPIRIT TOTEM REWORK
+- Spirit Totem now comes in three forms (6s each), in a shuffled cycle: every three casts use all three
+  forms once, in a random order, before any repeats:
+  - UNICORN: heals him while he stays near it, and slows enemies nearby.
+  - BEAR: gives him a grey shield worth 10% of his health. It never refills and fades when the
+    totem does. Enemies nearby take a little damage.
+  - HAWK: while he stays near it, his attacks hit 20% harder and knock back further.
+- Each form has its own colour and callout. (Bear and hawk use recoloured unicorn art for now.)
+- Why: Big Chief was the strongest fighter (61%), crushing Owen (94%) and Madog (83%). The old
+  totem healed, slowed AND damaged every time, and its damage alone was ~790 per match.
+- Union Break: when his break ends he stands firm for 3 seconds: hits still flinch him but can't knock
+  him back, launch him or wall-splat him (STANDING FIRM shows under his name), so he isn't
+  immediately comboed out of the health he just got back.
+- Balance (CPU tests, all stages): 61% -> ~49%. Owen and Madog matchups down from 94% and 83% to
+  roughly 67-78%. Dask still counters him (~25%, was ~17-22%).
+- Tested and dropped: cutting his normal attacks (80% -> 27% win rate, 90% -> 34%), and full super
+  armour after Union Break (55% overall, Owen matchup back over 80%).
+
+OTHER
+- The stink cloud no longer cuts a longer slow short.
