@@ -1,0 +1,54 @@
+PARTY BRAWL - PATCH NOTES v0.2.3
+Released 2026-11-20
+
+MUSIC AND SOUND
+- Custom music system. Menu, stage and character songs can now be real song files, with the code-made
+  chiptune as the fallback for anything that doesn't have one yet.
+- Character themes: Frica ("Legend of Frica the Poor") and Madog ("A Knight's Oath"). A fighter's theme
+  cuts in over the stage music when they're the first to break their opponent's bar in a round, or when
+  they won the previous round. The most recent trigger wins; the winner's theme keeps playing on the
+  victory screen. Songs are levelled to the same loudness and loop with a short crossfade.
+- Stage songs: "Ballad of the Brogade" on Goldenfields and Spine of the World (it carries on without
+  restarting if you go from one to the other), "D.I.C.K.S.: The Final Thrust" on Vogler, and "Starfire
+  Extermination" on the Trafficker Ship, "The Booty Hunters' Plunder" on Erebus's Lair and "Neon Under
+  Nuclear Skies" on Tahoe. Every stage now has its own song.
+- Menu music: "Shadow Protocol" plays on the title screen, character select, settings and the online lobby.
+- Victory jingle: plays once when the match is won, then the menu music comes back in. (A winner with a
+  theme song gets their theme instead.)
+- New Settings screen (title screen and pause menu) with Master, Music and Sound effects volume sliders,
+  saved on your device. It replaces the old Music/Sound on/off buttons.
+
+ONLINE
+- Adaptive input delay: the host measures the ping before the match and sets the input delay for both
+  players: 2 frames on a good connection (same as before), 3 at ~70-120 ms, 4 at ~120-180 ms, 5 above that.
+  Slow connections (mobile data, US-UK) now rewind and replay much less, so fights feel smoother.
+- The game can also rewind further on slow connections before it has to pause and wait.
+- The ping readout at the bottom of the screen also shows the delay in use.
+
+FIGHTERS
+- Heavy Rail now has hand-drawn pixel art: the character, a crackling plasma bolt with a green burst on impact,
+  jump jets when Power Armor Drop launches him, and a big fiery shockwave with flying rubble when he lands.
+- Laser Sweep finally shows its laser: a thick red beam from the rifle across the whole area it hits.
+  (Before, the move hit but nothing was drawn.)
+- Owen Hale now has hand-drawn pixel art: the character, muzzle flashes and tracer rounds for the ACR burst,
+  a tumbling smoke grenade that pops on landing, a thick pixel-art smoke cloud that billows out, churns and
+  thins away, a red targeting flash on a CRIT, a whoosh on a MISS, and big red ship lasers for Captain's Orders.
+- Tedd the Friendly now has hand-drawn pixel art, drawn as the biggest fighter in the game (his hitbox is
+  unchanged). His heavy leaves a wide arc of fire, Pain Train kicks up a cloud of dust and speed lines,
+  Board with a Nail lands with a big comic bonk star, and WANNA BE FRIENDS? has a proper bear hug: arms
+  wide, the squeeze (with green squeeze lines and a little heart over his new friend), then the throw.
+- Bof now has hand-drawn pixel art: the character, a big power fist impact with a steel shockwave, a shotgun
+  blast of fire, smoke and pellets from the barrel, yellow claw rakes on every Gone Feral hit, and a green
+  radiation glow while his ghoul healing kicks in.
+- Big Chief now has hand-drawn pixel art: shirtless, pot-bellied and in a Santa hat, swinging a picket sign.
+  Reindeer Stampede sends real galloping reindeer (the first with a glowing red nose) that rear up and vanish
+  in a puff of snow when they hit. Spirit Totem rises out of the ground as a carved reindeer totem with a
+  glowing ring, then sinks away. General Strike is a picket line of angry elves who shove when they connect.
+  Union Break shows a steaming mug of cocoa.
+- All six batch-2 fighters now have hand-drawn art. The old vector puppets stay as the fallback.
+
+BALANCE
+- Calder's passive is now Field Chemist (it overlapped too much with Bof's healing passive). Every 12-20s
+  he crafts a random chem: Jet (25% faster, cooldowns recover 50% faster for 6s), Med-X (25% less damage
+  taken for 6s), Addictol (clears poison, Pax, Berserk, MUDDLED, hexes and slows) or a Stimpak (heals 7%
+  of max health). The old perk (healing starts after 2s instead of 3s) is gone. Cooldowns unchanged.
