@@ -243,7 +243,7 @@ const STAGES=[
   spawn:[200,760],hazard:'boulder',art:{src:'goldenfields_bg.png',yOff:18,over:[ // pieces cut from the painting, redrawn on top; sx,sy = where they sit in the painting
      {src:'gf_wheat.png',sx:97,sy:536,layer:'mid'},  // wheat in front of the giant's legs
      {src:'gf_ramp1.png',sx:599,sy:226,layer:'front',plats:[0]},{src:'gf_ramp2.png',sx:1055,sy:275,layer:'front',plats:[1]},
-     {rect:[599,275,1073,666],layer:'front',plats:[0,1]},{rect:[1055,344,617,597],layer:'front',plats:[0,1]}]}}, // front pieces only hide fighters (and their area effects) up on those platforms; the rects redraw the whole wall, inn and ground below the battlements
+     {rect:[599,275,456,666],layer:'front',plats:[0,1]},{rect:[1055,344,617,597],layer:'front',plats:[0,1]}]}}, // front pieces only hide fighters (and their area effects) up on those platforms; the rects redraw the whole wall, inn and ground below the battlements
   {id:'spine',name:'Spine of the World',camp:"Storm King's Thunder",floor:[[WALL_L,WALL_R]],
    slope:{y0:389,y1:486},          // the mountainside runs downhill from the peak (left) to the right
    blocks:[{x0:398,x1:578,h:41}],   // fallen trees across the path: solid, jump over or stand on them
@@ -252,8 +252,8 @@ const STAGES=[
    snow:{spd:0.92,grip:0.16},
    spawn:[180,780],hazard:'wind',art:{src:'spine_bg.png',yOff:0}},
   {id:'vogler',name:'Vogler',camp:'Dragonlance',floor:[[WALL_L,WALL_R]], // the night Vogler fell: burning town, dragon-headed siege engines
-   plats:[{x:44,y:298,w:206},{x:362,y:348,w:210},{x:582,y:212,w:172},{x:758,y:302,w:182}], // house roof, market stall, gate tower, wall walk
-   walls:[{x:757,y0:212,y1:302}], // the gate tower's side above the wall walk
+   plats:[{x:44,y:298,w:206},{x:362,y:348,w:210},{x:582,y:212,w:172},{x:758,y:311,w:182}], // house roof, market stall, gate tower, wall walk (walk surface sits down behind the merlons)
+   walls:[{x:757,y0:212,y1:311}], // the gate tower's side above the wall walk
    spawn:[220,740],hazard:'volley',art:{src:'vogler_bg.png',yOff:0,over:[ // depth: anyone up on the gate tower (2) or wall walk (3) is drawn behind these bits of the painting
      {rect:[1317,508,40,19],layer:'front',plats:[3]},{rect:[1317,527,35,18],layer:'front',plats:[3]},{rect:[1374,508,58,19],layer:'front',plats:[3]},{rect:[1380,527,47,18],layer:'front',plats:[3]},{rect:[1449,508,56,19],layer:'front',plats:[3]},{rect:[1454,527,46,18],layer:'front',plats:[3]},{rect:[1522,508,56,19],layer:'front',plats:[3]},{rect:[1528,527,45,18],layer:'front',plats:[3]},{rect:[1597,508,55,19],layer:'front',plats:[3]},{rect:[1602,527,45,18],layer:'front',plats:[3]},{rect:[1300,545,372,396],layer:'front',plats:[2,3]},{rect:[1005,375,320,566],layer:'front',plats:[2,3]}]}},
   {id:'ship',name:'Trafficker Ship',camp:'Beyond the Nest',floor:[[WALL_L,WALL_R]], // two-level hallway between two tall airlock rooms
@@ -1116,13 +1116,14 @@ function surfUnder(x,y){let b=-1;for(let i=0;i<SURF.length;i++){const p=SURF[i];
 function nextSurf(a,b){const prev={[a]:-1},q=[a];while(q.length){const c=q.shift();if(c===b)break;for(const n of LINKS[c])if(!(n in prev)){prev[n]=c;q.push(n)}}
   if(!(b in prev))return -1;let c=b;while(prev[c]!==a&&prev[c]!==-1)c=prev[c];return c}
 // One step of a route to (tx,ty): returns {dir,jump,drop,aim,up} or null when already on the right surface
-function navPlan(x,y,ground,tx,ty){
+function navPlan(x,y,ground,tx,ty,hw=0){
   if(!ground)return null;
   const cur=surfAt(x,y),tgt=surfUnder(tx,ty);
   if(cur<0||tgt<0||cur===tgt)return null;
   const nx=nextSurf(cur,tgt);if(nx<0)return null;
   const P=SURF[nx],C=SURF[cur],pc=P.x+P.w/2,over=P.x<C.x+C.w&&P.x+P.w>C.x,toward=pc>x?1:-1,Py=surfY(P,x),Cy=surfY(C,x);
-  const edge=pc>C.x+C.w/2?C.x+C.w-16:C.x+16; // the end of my surface nearest the next one
+  const endX=pc>C.x+C.w/2?C.x+C.w:C.x,walled=STAGE.walls&&STAGE.walls.some(w=>w.door===undefined&&Math.abs(w.x-endX)<24&&Cy>w.y0-4&&Cy<w.y1+30);
+  const m=walled?Math.max(16,hw+4):16,edge=endX===C.x?C.x+m:C.x+C.w-m; // the end of my surface nearest the next one (a wall there stops a wide fighter short of the usual spot)
   if(Py<Cy-4){ // climb
     if(over){const ax=Math.max(Math.max(P.x,C.x)+24,Math.min(Math.min(P.x+P.w,C.x+C.w)-24,x));
       if(Math.abs(x-ax)>9)return{dir:ax>x?1:-1,jump:0,drop:0};return{dir:0,jump:1,drop:0,aim:Math.max(P.x+20,Math.min(P.x+P.w-20,x)),up:Py}}
@@ -1173,7 +1174,7 @@ function cpuBrain(s,i,diff,mem){
     }
     if(me.ground)mem.nav=null;
     const far=Math.abs(d.x-me.x)>70||Math.abs(d.y-me.y)>60;
-    const np=far&&['idle','walk','block'].includes(me.st)?navPlan(me.x,me.y,me.ground,d.x,d.y):null;
+    const np=far&&['idle','walk','block'].includes(me.st)?navPlan(me.x,me.y,me.ground,d.x,d.y,CH[me.c].w/2):null;
     if(np){
       if(np.drop)return K.B|(mem.uTog?K.U:0);
       if(np.jump){if(mem.uTog){mem.nav={aim:np.aim,up:np.up};return K.U|(np.dir>0?R:np.dir<0?L:0)}return 0}
@@ -3011,7 +3012,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){netSend({t:'select'});netGoSelect(
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.7'; // shown on the title screen; online players must match
+const VERSION='0.2.8'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 (function checkForUpdate(){ // phones cache the page: if the copy on the server is newer, say so

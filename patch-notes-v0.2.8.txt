@@ -1,0 +1,14 @@
+PARTY BRAWL - PATCH NOTES v0.2.8
+Released 2026-11-21
+
+FIXES
+- Goldenfields: fighters standing on the lower wall walk (right side) no longer have their lower half
+  painted over by a strip of sky. One of the depth-layer pieces for the gatehouse was cut too wide
+  and reached all the way across the lower wall.
+- Vogler: the wall walk to the right of the gate tower now sits a little lower (9 px), behind the
+  merlons, so fighters up there stand on the walkway instead of looking like they float on top of
+  the battlements.
+- CPU pathfinding: wide fighters (Madog, Tenebrund, Heavy Rail, Bof, Big Chief) no longer walk into a
+  wall forever when they need to jump up past it, e.g. from Goldenfields' lower wall walk up to the
+  gatehouse. The CPU used to aim for a take-off spot closer to the wall than a wide body can get, so it
+  never got there and never jumped. It now allows for its own width when a wall is in the way.
