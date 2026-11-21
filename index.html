@@ -160,18 +160,10 @@ kbd{font:600 12px Rubik,sans-serif;background:#000;border:1px solid var(--line);
 
   <section class="screen" id="sControls"><div class="wrap">
     <h2>Controls</h2>
-    <table><thead><tr><th>Action</th><th>Player 1</th><th>Player 2</th><th>Controller</th></tr></thead><tbody>
-      <tr><td>Move</td><td><kbd>A</kbd> <kbd>D</kbd></td><td><kbd>←</kbd> <kbd>→</kbd></td><td>Stick / D-pad</td></tr>
-      <tr><td>Jump (press twice for double jump)</td><td><kbd>W</kbd></td><td><kbd>↑</kbd></td><td>Up</td></tr>
-      <tr><td>Block (hold). Block + Jump drops through a platform</td><td><kbd>S</kbd></td><td><kbd>↓</kbd></td><td>L shoulder / LT (or Down). Hold L and press Up to drop</td></tr>
-      <tr><td>Light attack</td><td><kbd>F</kbd></td><td><kbd>K</kbd> / <kbd>Num1</kbd></td><td>A</td></tr>
-      <tr><td>Heavy attack</td><td><kbd>G</kbd></td><td><kbd>L</kbd> / <kbd>Num2</kbd></td><td>X</td></tr>
-      <tr><td>Special 1</td><td><kbd>R</kbd></td><td><kbd>I</kbd> / <kbd>Num4</kbd></td><td>B</td></tr>
-      <tr><td>Special 2</td><td><kbd>T</kbd></td><td><kbd>O</kbd> / <kbd>Num5</kbd></td><td>Y</td></tr>
-      <tr><td>Super (when the meter is full)</td><td><kbd>H</kbd> or R+T</td><td><kbd>P</kbd> / <kbd>Num3</kbd></td><td>R shoulder / RT</td></tr>
-      <tr><td>Pause</td><td colspan="2"><kbd>Esc</kbd></td><td>Start</td></tr>
-    </tbody></table>
-    <p class="note">In Solo, either set of keys works for you. On a phone or tablet, on-screen buttons appear: slide on the left pad to move, and use the right-hand buttons to jump, block and attack. Hit the other player into a wall hard enough and you get a <b>Wall Splat</b> for bonus damage. The super meter fills as you deal and take damage.</p>
+    <p class="note">Click a key or button to change it, then press the new one (Esc cancels, Backspace clears it). Changes save in this browser.</p>
+    <table id="bindTable"></table>
+    <div class="row"><button type="button" class="pill" id="bindReset">Reset to defaults</button></div>
+    <p class="note">In Solo, either set of keys works for you. On a phone or tablet, on-screen buttons appear: slide on the left pad to move (slide down to drop through a platform), and use the right-hand buttons to jump, block and attack. Hit the other player into a wall hard enough and you get a <b>Wall Splat</b> for bonus damage. The super meter fills as you deal and take damage.</p>
     <h2 style="margin-top:22px">Movelists</h2>
     <div class="grid" id="moveCards"></div>
     <div class="row"><button type="button" class="pill" data-go="title">Back</button></div>
@@ -232,7 +224,7 @@ kbd{font:600 12px Rubik,sans-serif;background:#000;border:1px solid var(--line);
    way the game moves forward. That is what online rollback will need.)
    ===================================================================== */
 const W=960,H=540,FLOOR=470,GRAV=0.8,WALL_L=20,WALL_R=940,FPS=60;
-const K={L:1,R:2,U:4,B:8,LP:16,HP:32,S1:64,S2:128,SU:256};
+const K={L:1,R:2,U:4,B:8,LP:16,HP:32,S1:64,S2:128,SU:256,D:512}; // D = down: drops through a platform when tapped on one, otherwise blocks like B
 /* ---------- stages: floor segments (gaps allowed), an optional water pit, platforms, spawns, hazard ---------- */
 const STAGES=[
   {id:'erebus',name:"Erebus's Lair",camp:'Through Rough Tides',floor:[[WALL_L,355],[595,WALL_R]], // measured from the painted background
@@ -243,16 +235,15 @@ const STAGES=[
    spawn:[220,740],hazard:'unda',art:{src:'erebus_bg.png',yOff:26}},
   {id:'goldenfields',name:'Goldenfields',camp:"Storm King's Thunder",floor:[[WALL_L,WALL_R]], // open field (left), smashed gate (middle), the inn (right)
    plats:[{x:348,y:168,w:255},                 // gatehouse wall walk (the gate below is smashed open)  -- measured from the painting
-          {x:605,y:198,w:155},                 // lower wall walk behind the inn
-          {x:762,y:208,w:178},                 // the inn's roof ridge
+          {x:605,y:198,w:335},                 // lower wall walk, all the way to the right edge (the inn roof below it is just scenery)
           {x:598,y:250,w:82},{x:568,y:338,w:108}, // scaffold: top deck, middle deck
           {x:712,y:340,w:173},                 // the inn's porch awning
           {x:852,y:389,w:83}],                 // the well's little roof
    walls:[{x:605,y0:168,y1:200}],
-   blocks:[{x0:84,x1:134,h:44}], // the hay bale in the field: solid, jump over or stand on it // the gate tower's side, between its wall walk and the lower one: solid
   spawn:[200,760],hazard:'boulder',art:{src:'goldenfields_bg.png',yOff:18,over:[ // pieces cut from the painting, redrawn on top; sx,sy = where they sit in the painting
      {src:'gf_wheat.png',sx:97,sy:536,layer:'mid'},  // wheat in front of the giant's legs
-     {src:'gf_ramp1.png',sx:599,sy:226,layer:'front',plats:[0]},{src:'gf_ramp2.png',sx:1055,sy:275,layer:'front',plats:[1,2]}]}}, // front pieces only hide fighters who are up on those platforms
+     {src:'gf_ramp1.png',sx:599,sy:226,layer:'front',plats:[0]},{src:'gf_ramp2.png',sx:1055,sy:275,layer:'front',plats:[1]},
+     {rect:[599,275,1073,666],layer:'front',plats:[0,1]},{rect:[1055,344,617,597],layer:'front',plats:[0,1]}]}}, // front pieces only hide fighters (and their area effects) up on those platforms; the rects redraw the whole wall, inn and ground below the battlements
   {id:'spine',name:'Spine of the World',camp:"Storm King's Thunder",floor:[[WALL_L,WALL_R]],
    slope:{y0:389,y1:486},          // the mountainside runs downhill from the peak (left) to the right
    blocks:[{x0:398,x1:578,h:41}],   // fallen trees across the path: solid, jump over or stand on them
@@ -263,10 +254,14 @@ const STAGES=[
   {id:'vogler',name:'Vogler',camp:'Dragonlance',floor:[[WALL_L,WALL_R]], // the night Vogler fell: burning town, dragon-headed siege engines
    plats:[{x:44,y:298,w:206},{x:362,y:348,w:210},{x:582,y:212,w:172},{x:758,y:302,w:182}], // house roof, market stall, gate tower, wall walk
    walls:[{x:757,y0:212,y1:302}], // the gate tower's side above the wall walk
-   spawn:[220,740],hazard:'volley',art:{src:'vogler_bg.png',yOff:0}},
+   spawn:[220,740],hazard:'volley',art:{src:'vogler_bg.png',yOff:0,over:[ // depth: anyone up on the gate tower (2) or wall walk (3) is drawn behind these bits of the painting
+     {rect:[1317,508,40,19],layer:'front',plats:[3]},{rect:[1317,527,35,18],layer:'front',plats:[3]},{rect:[1374,508,58,19],layer:'front',plats:[3]},{rect:[1380,527,47,18],layer:'front',plats:[3]},{rect:[1449,508,56,19],layer:'front',plats:[3]},{rect:[1454,527,46,18],layer:'front',plats:[3]},{rect:[1522,508,56,19],layer:'front',plats:[3]},{rect:[1528,527,45,18],layer:'front',plats:[3]},{rect:[1597,508,55,19],layer:'front',plats:[3]},{rect:[1602,527,45,18],layer:'front',plats:[3]},{rect:[1300,545,372,396],layer:'front',plats:[2,3]},{rect:[1005,375,320,566],layer:'front',plats:[2,3]}]}},
   {id:'ship',name:'Trafficker Ship',camp:'Beyond the Nest',floor:[[WALL_L,WALL_R]], // two-level hallway between two tall airlock rooms
    plats:[{x:205,y:300,w:552}],
-   walls:[{x:200,y0:150,y1:FLOOR+10,door:0},{x:760,y0:150,y1:FLOOR+10,door:1}],rooms:[[WALL_L,200],[760,WALL_R]],lowGrav:1,
+   walls:[{x:200,y0:150,y1:FLOOR+10,door:0},{x:760,y0:150,y1:FLOOR+10,door:1}, // the airlock doors
+          {x:200,y0:-400,y1:150},{x:760,y0:-400,y1:150}], // solid bulkhead above each door, up to the roof: you leave a room through the doorway or not at all
+   ceil:84,softCeil:{y:150,push:0.6}, // hard roof line; in the airlock rooms, a gentle push down between the roof and the door tops
+   rooms:[[WALL_L,200],[760,WALL_R]],lowGrav:1,
    spawn:[300,660],hazard:'vent',art:{src:'ship_bg.png',yOff:4}},
   {id:'tahoe',name:'Tahoe',camp:'Fallout',floor:[[WALL_L,WALL_R]], // the gang town we took back: ruins on the left, the lake's shallows on the right
    water:{x0:602,x1:WALL_R,spd:0.85}, // wading: a bit slower
@@ -534,12 +529,14 @@ function newFighter(i,ci,x){const c=CH[ci];return{i,c:ci,x,y:floorY(x),pitT:0,vx
 /* ---------- stage hazards ---------- */
 const UNDA={every:1200,vary:180,chance:0.25,warn:75,act:40,dmg:150}; // ~20s (+/-3s) a roll; 25% Unda bursts from the vortex
 const WIND={k:0.4,calm:480,calmVar:361,gust:300,gustVar:241,ease:0.008}; // calm 8-14s, then a gust 5-9s one random way at 50-100%, repeat; full wind = +/-40% move speed
-const VOLLEY={every:600,vary:180,warn:80,n:14,dmg:22,fire:180,fireDmg:7}; // flaming arrow volley every ~10s (+/-3) over a third of the arena
+const VOLLEY={every:600,vary:180,warn:80,n:14,dmg:22,fire:180,fireDmg:7,platStop:0.5}; // flaming arrow volley every ~10s (+/-3) over a third of the arena
 const DOOR_CRUSH={r:40,dmg:120,stun:60}; // caught in the door as it seals: big hit and a stun
 const LOW_GRAV=0.5; // gravity in the airlock rooms (jumps go about twice as high)
 const VENT={every:900,vary:240,warn:100,act:180,drain:7,pull:0.5}; // an airlock vents every ~15s (+/-4)
 const BLOATFLY={every:780,vary:240,dmg:40,life:480,spd:2.6}; // a bloatfly every ~13s (+/-4): one bite, then it leaves
 const ZONE_TAGS={stink:'gas',smoke:'gas'}; // what an airlock vent clears (gas and fire). Tag new lingering effects here.
+function volleyStop(s,x){ // where an arrow lands: each platform under it is a coin flip (stop / carry on through), the ground always stops it
+  const ys=PLATS.filter(p=>x>=p.x&&x<=p.x+p.w).map(p=>p.y).sort((a,b)=>a-b);for(const y of ys)if(rngNext(s)<VOLLEY.platStop)return y;return floorY(x)}
 function topSurfaceAt(x){let y=floorY(x);for(const p of PLATS)if(x>=p.x&&x<=p.x+p.w&&p.y<y)y=p.y;return y}
 function doorClosed(s,d){return!!(s.hz&&s.hz.door&&!s.hz.door[d])}
 function doorBetween(s,x1,x2){if(!STAGE.walls)return false;for(const w of STAGE.walls)if(w.door!==undefined&&doorClosed(s,w.door)&&Math.min(x1,x2)<w.x&&Math.max(x1,x2)>w.x)return true;return false}
@@ -559,13 +556,13 @@ function boulderStep(s){const h=s.hz,B=BOULDER;
 function volleyStep(s){const h=s.hz,V=VOLLEY;
   for(const a of h.arrows){if(a.d>0){a.d--;continue}a.x+=a.vx;a.y+=a.vy; // arrows in flight: hit people, stop on the first surface (platforms protect you)
     for(const f of s.f){if(a.dead||f.st==='ko')continue;if(ov([a.x-6,a.y-8,12,16],hurt(f))){a.dead=1;s.fx.push({k:'arrowhit',x:a.x,y:a.y,life:16,t:0});hitF(s,null,f,{dmg:V.dmg,kb:[Math.sign(a.vx)*4,-3],hs:14,src:'hazard',type:'Fire'})}}
-    if(!a.dead&&a.y>=a.stop){a.dead=1;h.fires.push({x:a.x,y:a.stop,t:V.fire})}}
+    if(!a.dead&&a.y>=a.stop){a.dead=1;h.fires.push({x:a.x,y:a.stop,t:V.fire,s:a.vx<0?-1:1})}}
   h.arrows=h.arrows.filter(a=>!a.dead);
   const burnt=[0,0];for(const p of h.fires){p.t--; // flames where they landed
     if(p.t%20===0)for(const f of s.f)if(!burnt[f.i]&&f.st!=='ko'&&Math.abs(f.y-p.y)<6&&Math.abs(f.x-p.x)<14+CH[f.c].w/2){burnt[f.i]=1;deal(s,null,f,V.fireDmg,'hazard','Fire');s.fx.push({k:'spark',x:f.x,y:f.y-20,col:'#ff8a1a',life:10,t:0})}}
   h.fires=h.fires.filter(p=>p.t>0);
   if(h.warn>0){if(--h.warn===0){const w=(h.x1-h.x0)/V.n;
-      for(let k=0;k<V.n;k++){const xt=h.x0+(k+0.5)*w+(rngNext(s)-0.5)*w*0.6,stop=topSurfaceAt(xt),vx=h.side*3.2,vy=10,T=(stop+30)/vy;h.arrows.push({x:xt-vx*T,y:-30,vx,vy,stop,d:Math.floor(rngNext(s)*14)})}
+      for(let k=0;k<V.n;k++){const xt=h.x0+(k+0.5)*w+(rngNext(s)-0.5)*w*0.6,stop=volleyStop(s,xt),vx=h.side*3.2,vy=10,T=(stop+30)/vy;h.arrows.push({x:xt-vx*T,y:-30,vx,vy,stop,d:Math.floor(rngNext(s)*14)})}
       hazardReset(s)}return}
   if(--h.t<=0){const third=Math.floor(rngNext(s)*3),w=(WALL_R-WALL_L)/3;h.x0=WALL_L+third*w;h.x1=h.x0+w;h.side=rngNext(s)<0.5?1:-1;h.warn=V.warn;say(s,(h.x0+h.x1)/2,120,'VOLLEY!','#ff8a3d',32)}}
 function ventStep(s){const h=s.hz,V=VENT,R=STAGE.rooms;
@@ -788,10 +785,8 @@ function control(s,f,inp){
   const wind=STAGE.hazard==='wind'&&s.hz?s.hz.w:0;
   const spd=c.spd*(f.slow>0?0.55:1)*(f.haste>0?1.35:1)*(f.muddle>0?0.7:1)*(f.berserk>0?1.15:1)*(f.jet>0?JET_SPD:1)*(dir?1+WIND.k*wind*dir:1); // with the wind: faster; into it: slower
   if(f.ground){
-    if((inp&K.B)&&!(f.berserk>0)){
-      if((pr&K.U)&&onPlat(f)){f.drop=14;f.ground=false;f.y+=2;f.st='jump';return}
-      if(f.shield>0){f.st='block';f.vx=0;return}
-    }
+    if(((pr&K.D)||((inp&(K.B|K.D))&&(pr&K.U)))&&onPlat(f)){f.drop=14;f.ground=false;f.y+=2;f.st='jump';return} // tap Down on a platform to drop through (Block + Jump still works too)
+    if((inp&(K.B|K.D))&&!(f.berserk>0)&&f.shield>0){f.st='block';f.vx=0;return} // Block, or holding Down, blocks
     const sn=STAGE.snow&&f.y>=floorY(f.x)-2?STAGE.snow:null; // deep snow: a bit slower, and you slide when starting/stopping/turning
     const wd=STAGE.water&&f.x>STAGE.water.x0&&f.x<STAGE.water.x1?STAGE.water.spd:1;
     const tv=dir*spd*(sn?sn.spd:1)*wd,nv=sn?f.vx+(tv-f.vx)*sn.grip:tv;
@@ -811,9 +806,11 @@ function phys(s,f){
   if(f.st==='grind'){f.vx=0}
   const lowG=STAGE.lowGrav&&roomOf(f.x)>=0; // the ship's airlock rooms: low gravity, floaty jumps
   f.vy=Math.min(lowG?9:16,f.vy+GRAV*(lowG?LOW_GRAV:1));
-  const py=f.y;f.x+=f.vx;f.y+=f.vy;
+  if(lowG&&STAGE.softCeil){const sc=STAGE.softCeil,head=f.y-c.h;if(head<sc.y)f.vy+=sc.push*Math.min(1,(sc.y-head)/(sc.y-(STAGE.ceil||0)))} // soft push down near the roof: stronger the higher you are
+  const py=f.y,px0=f.x;f.x+=f.vx;f.y+=f.vy;
   const wasGround=f.ground;f.ground=false;
   const fy=floorY(f.x);
+  if(STAGE.ceil!==undefined&&f.y-c.h<STAGE.ceil){f.y=STAGE.ceil+c.h;if(f.vy<0)f.vy=0} // hard roof: heads stop at the ceiling
   if(f.y>=fy){f.y=fy;f.vy=0;f.ground=true}
   else if(f.vy>=0){for(const p of PLATS)if((f.drop<=0||p.solid)&&py<=p.y&&f.y>=p.y&&f.x>p.x-6&&f.x<p.x+p.w+6){f.y=p.y;f.vy=0;f.ground=true;break}}
   if(!f.ground&&wasGround&&f.vy>=0&&f.drop<=0&&STAGE.slope&&f.y>=fy-10&&f.st!=='hit'){f.y=fy;f.vy=0;f.ground=true} // walk down a slope without taking off
@@ -823,7 +820,8 @@ function phys(s,f){
       const l=f.x<(b.x0+b.x1)/2;f.x=l?b.x0-hw2:b.x1+hw2;if(f.vx*(l?1:-1)>0)f.vx=0}}
   if(STAGE.walls)for(const w of STAGE.walls){const hw2=c.w/2; // thin solid walls: block anyone whose body overlaps them side-on
     if(w.door!==undefined&&!doorClosed(s,w.door))continue;
-    if(f.y>w.y0+3&&f.y-c.h<w.y1&&f.x+hw2>w.x&&f.x-hw2<w.x){const l=f.x<w.x;f.x=l?w.x-hw2:w.x+hw2;if(f.vx*(l?1:-1)>0)f.vx=0}}
+    if(f.y>w.y0+3&&f.y-c.h<w.y1&&f.x+hw2>w.x&&f.x-hw2<w.x){const l=px0<w.x||(px0===w.x&&f.x<w.x); // push back to the side they came from (not whichever side their centre ended up on)
+    f.x=l?w.x-hw2:w.x+hw2;if(f.vx*(l?1:-1)>0)f.vx=0}}
   if(f.ground&&!wasGround){
     f.jumps=0;
     if(f.st==='jump')f.st='idle';
@@ -1086,8 +1084,8 @@ function cpuInput(s,i,diff,mem){ // stage awareness wrapped around the fighting 
     if(BOULDER.warn-h.warn>=react){const dx=me.x-h.x,zone=BOULDER.w/2+hw+14;
       if(Math.abs(dx)<zone){let away=dx<0?-1:1;if((away<0&&h.x-zone<WALL_L+20)||(away>0&&h.x+zone>WALL_R-20))away=-away;return(o&~(K.L|K.R|K.U|K.B))|(away<0?K.L:K.R)}
       const into=(o&K.R)&&dx<0&&-dx<zone+30||(o&K.L)&&dx>0&&dx<zone+30;if(into)return o&~(K.L|K.R)}} // don't walk into it either
-  if(STAGE.hazard==='volley'&&s.hz&&(s.hz.warn>0||s.hz.arrows.length)&&me.st!=='ko'&&free){const h=s.hz,react={easy:50,normal:28,hard:14}[diff]||28; // shelter under a platform or leave the target area
-    const sheltered=PLATS.some(p=>me.x>=p.x+8&&me.x<=p.x+p.w-8&&p.y<me.y-CH[me.c].h);
+  if(STAGE.hazard==='volley'&&s.hz&&(s.hz.warn>0||s.hz.arrows.length)&&me.st!=='ko'&&free){const h=s.hz,react={easy:50,normal:28,hard:14}[diff]||28; // leave the target area (cover only stops half the arrows)
+    const sheltered=false;
     if((h.warn===0||VOLLEY.warn-h.warn>=react)&&me.x>h.x0-hw&&me.x<h.x1+hw&&!sheltered){let goL=me.x-h.x0<h.x1-me.x;if(goL&&h.x0<=WALL_L+5)goL=false;if(!goL&&h.x1>=WALL_R-5)goL=true;return(o&~(K.L|K.R|K.U|K.B))|(goL?K.L:K.R)}}
   if(STAGE.hazard==='vent'&&s.hz&&s.hz.warn>0&&me.st!=='ko'&&free){const h=s.hz,react={easy:60,normal:30,hard:15}[diff]||30,dw=STAGE.walls[h.lock],near=Math.abs(me.x-dw.x)<DOOR_CRUSH.r+hw+20,inRoom=roomOf(me.x)===h.lock,late=h.warn<28;
     if(VENT.warn-h.warn>=react){
@@ -1408,6 +1406,11 @@ function drawStageBack(){
     g.globalAlpha=0.35*k;g.fillStyle='#2fe0ff';g.beginPath();g.ellipse(cx,P.y-10,120,30,0,0,7);g.fill();g.globalAlpha=1}
   g.restore();
 }
+function fireBack(p){const art=STAGE_ART[STAGE.id];if(!art||!art.ready||!pixelArt)return false; // a fire sitting on a wall walk: drawn behind the battlements
+  return art.over.some(o=>o.layer==='front'&&o.plats&&o.plats.some(i=>{const q=STAGE.plats[i];return Math.abs(p.y-q.y)<2&&p.x>=q.x&&p.x<=q.x+q.w}))}
+function drawFire(im,p,t,d){const age=VOLLEY.fire-p.t;let r=3,c=Math.floor(t/5+p.x)%6;if(age<16){r=2;c=Math.floor(age/4)}else if(p.t<24){r=4;c=Math.min(3,Math.floor((24-p.t)/6))}
+  g.save();g.translate(p.x,0);if(p.s<0)g.scale(-1,1);fxCell(im,c*200,r*200,200,200,-d/2,p.y-184*AR_K,d,d);g.restore()} // the sheet's stuck arrows came from the left: mirror the ones that flew in from the right
+function drawVolleyBack(){if(!S||STAGE.hazard!=='volley'||!S.hz.fires)return;const im=fxOn('arrows');if(!im)return;g.save();for(const p of S.hz.fires)if(fireBack(p))drawFire(im,p,S.frame,200*AR_K);g.restore()}
 function drawVolley(){if(!S||STAGE.hazard!=='volley'||!S.hz.arrows)return;const h=S.hz,t=S.frame;g.save();
   if(h.warn>0){const k=1-h.warn/VOLLEY.warn;g.globalAlpha=0.12+0.12*Math.abs(Math.sin(t*0.25));g.fillStyle='#ff5a1a';g.fillRect(h.x0,0,h.x1-h.x0,FLOOR);g.globalAlpha=0.9;
     g.strokeStyle='#ffb04a';g.setLineDash([10,8]);g.strokeRect(h.x0,0,h.x1-h.x0,FLOOR);g.setLineDash([]);
@@ -1415,8 +1418,7 @@ function drawVolley(){if(!S||STAGE.hazard!=='volley'||!S.hz.arrows)return;const 
   const im=fxOn('arrows');
   if(im){const d=200*AR_K;
     for(const a of h.arrows){if(a.d>0)continue;g.save();g.translate(a.x,a.y);g.rotate(Math.atan2(a.vy,a.vx));fxCell(im,(Math.floor((t+a.x)/4)%4)*200,0,200,200,-d/2-6,-d/2,d,d);g.restore()}
-    for(const p of h.fires){const age=VOLLEY.fire-p.t;let r=3,c=Math.floor(t/5+p.x)%6;if(age<16){r=2;c=Math.floor(age/4)}else if(p.t<24){r=4;c=Math.min(3,Math.floor((24-p.t)/6))}
-      fxCell(im,c*200,r*200,200,200,p.x-d/2,p.y-184*AR_K,d,d)}
+    for(const p of h.fires)if(!fireBack(p))drawFire(im,p,t,d);
     g.restore();return}
   for(const a of h.arrows){if(a.d>0)continue;const ang=Math.atan2(a.vy,a.vx);g.save();g.translate(a.x,a.y);g.rotate(ang);
     g.strokeStyle='#5a3a1e';g.lineWidth=3;g.beginPath();g.moveTo(-26,0);g.lineTo(6,0);g.stroke();poly([6,-4,14,0,6,4],'#cfd6e0',1);poly([-26,-4,-20,0,-26,4],'#e8e0cc',1);
@@ -1427,7 +1429,7 @@ function drawVolley(){if(!S||STAGE.hazard!=='volley'||!S.hz.arrows)return;const 
 const doorAnim=[1,1];
 function drawShipDoors(){if(!S||STAGE.hazard!=='vent'||!S.hz.door)return;const h=S.hz,t=S.frame;
   const dim=fxOn('shipdoor');
-  STAGE.walls.forEach((w,d)=>{doorAnim[d]+=((h.door[d]?1:0)-doorAnim[d])*0.25;const open=doorAnim[d],top=w.y0,bot=FLOOR,hh=(bot-top)/2*(1-open);
+  STAGE.walls.forEach((w,d)=>{if(w.door===undefined)return;doorAnim[d]+=((h.door[d]?1:0)-doorAnim[d])*0.25;const open=doorAnim[d],top=w.y0,bot=FLOOR,hh=(bot-top)/2*(1-open);
     if(dim){const DW=113,DH=1003,top2=143,sc=(FLOOR+3-top2)/DH,fr=Math.min(7,Math.round(open*7)); // the painted door: 8 frames, closed to open
       fxCell(dim,fr*DW,0,DW,DH,w.x-DW*sc/2,top2,DW*sc,DH*sc);const locked=h.act>0&&h.lock===d;g.fillStyle=locked?'#ff3a3a':open>0.5?'#7fe08a':'#ffb04a';g.beginPath();g.arc(w.x,top2-8,4,0,7);g.fill();return}
     g.fillStyle='#4a5260';g.fillRect(w.x-7,top,14,hh);g.fillRect(w.x-7,bot-hh,14,hh);g.fillStyle='#ffb04a';if(hh>4){g.fillRect(w.x-7,top+hh-4,14,3);g.fillRect(w.x-7,bot-hh+1,14,3)}
@@ -1493,13 +1495,14 @@ function drawUnda(){ // the sea serpent bursting from the vortex
 }
 function drawOverlays(layer){ // bits of the painted background that sit in front of the giant (mid) or the fighters (front)
   const art=STAGE_ART[STAGE.id];if(!art||!art.ready||!pixelArt||!art.over.length)return;const k=W/art.img.width;
-  g.save();g.imageSmoothingEnabled=true;for(const o of art.over)if(o.layer===layer&&o.img.complete&&o.img.naturalWidth)g.drawImage(o.img,o.sx*k,o.sy*k+art.yOff,o.img.width*k,o.img.height*k);g.restore()}
-const behindWall=[false,false]; // display only: is this fighter up on a wall walk (drawn behind the battlements)?
+  g.save();g.imageSmoothingEnabled=true;for(const o of art.over){if(o.layer!==layer)continue;if(o.rect){const[x,y,w,h]=o.rect;g.drawImage(art.img,x,y,w,h,x*k,y*k+art.yOff,w*k,h*k)}else if(o.img.complete&&o.img.naturalWidth)g.drawImage(o.img,o.sx*k,o.sy*k+art.yOff,o.img.width*k,o.img.height*k)}g.restore()}
+function wallTopY(){const art=STAGE_ART[STAGE.id],ids=art?art.over.filter(o=>o.layer==='front'&&o.plats).flatMap(o=>o.plats):[];return ids.length?Math.max(...ids.map(i=>STAGE.plats[i].y)):-1e9}
+const behindWall=[false,false],behindY=[0,0]; // display only: is this fighter up on a wall walk (drawn behind the battlements)?
 function wallState(f){
   const art=STAGE_ART[STAGE.id],walls=art&&art.ready&&pixelArt?art.over.filter(o=>o.layer==='front'&&o.plats):[];if(!walls.length)return false;
   const ids=walls.flatMap(o=>o.plats);
-  if(f.ground){const pi=STAGE.plats.findIndex(p=>Math.abs(f.y-p.y)<3&&f.x>p.x-6&&f.x<p.x+p.w+6);behindWall[f.i]=ids.includes(pi)} // lands on a wall walk: behind; lands anywhere else: in front
-  else if(behindWall[f.i]&&f.y>Math.max(...ids.map(i=>STAGE.plats[i].y))+24)behindWall[f.i]=false; // dropped down past the wall: back in front
+  if(f.ground){const pi=STAGE.plats.findIndex(p=>Math.abs(f.y-p.y)<3&&f.x>p.x-6&&f.x<p.x+p.w+6);behindWall[f.i]=ids.includes(pi);if(behindWall[f.i])behindY[f.i]=STAGE.plats[pi].y} // lands on a wall walk: behind; lands anywhere else: in front
+  else if(behindWall[f.i]&&f.y>behindY[f.i]+24)behindWall[f.i]=false; // dropped down past the wall they were on: back in front
   return behindWall[f.i]}
 function drawStageFront(){ // water in front of anyone standing in the vortex
   const P=STAGE.pit;if(!P)return;const t=S?S.frame:0;
@@ -2009,7 +2012,7 @@ const SBC=84,SWC=230; // salty bullets (bullet 4, muzzle 4, impact 6) and Mush I
 const TFC=204; // tenebrund_fx cell; rows: stink puff 6, loop 8, fade 6, grater sparks 6, belly flop 8, flies 6
 const DFC=284; // dask_fx cell; rows: reckless aura 5, axe slash 5, rage finisher 8, dask action dust 5
 const FPC=348,FPS_=230/150; // feng pillar cell, sheet px -> game units
-for(const st of STAGES)if(st.art){const a=STAGE_ART[st.id]={img:new Image(),ready:false,yOff:st.art.yOff||0,over:(st.art.over||[]).map(o=>Object.assign({img:new Image()},o))};a.img.onload=()=>{a.ready=true;bgPainted=-1};a.img.src=st.art.src;a.over.forEach(o=>o.img.src=o.src)}
+for(const st of STAGES)if(st.art){const a=STAGE_ART[st.id]={img:new Image(),ready:false,yOff:st.art.yOff||0,over:(st.art.over||[]).map(o=>Object.assign(o.rect?{}:{img:new Image()},o))};a.img.onload=()=>{a.ready=true;bgPainted=-1};a.img.src=st.art.src;a.over.forEach(o=>{if(o.img)o.img.src=o.src})}
 const MFC=180; // madog_fx cell size; rows: guardians appear 6, loop 8, fade 6, impact 6, dust 6, wall 10
 for(const id in FXS){const sh=FXS[id];sh.img=new Image();sh.img.onload=()=>{sh.ready=true};sh.img.src=sh.src}
 function fxOn(id){return pixelArt&&FXS[id].ready?FXS[id].img:null}
@@ -2354,6 +2357,14 @@ function barFill(th,x,y,w,h,r,i){const T=BT[th],col=r>0.5?T.hi:r>0.25?T.mid:T.lo
     if(th==='pirate'){g.fillStyle='#ffffff22';g.fillRect(fx,y+4,fw,2)}
     if(th==='festive'&&S){g.fillStyle='#fff';for(let k=0;k<4;k++){const sx=(S.frame*1.3+k*97)%fw;g.globalAlpha=0.5+0.5*Math.sin(S.frame*0.2+k);g.fillRect(fx+sx,y+4+k*4,2,2)}}}
   g.restore()}
+function tempFill(th,x,y,w,h,i){if(w<=0)return;const t=S?S.frame:0,pulse=0.75+0.25*Math.sin(t*0.12);g.save();g.beginPath();g.rect(x,y,w,h);g.clip(); // a pale ward over the bar
+  if(th==='waste'){g.shadowColor='#d8f0ff';g.shadowBlur=8;g.fillStyle='#cfe6f0';for(let q=0;q<w;q+=8)g.fillRect(i?x+w-q-7:x+q,y+2,Math.min(7,w-q),h-4);g.shadowBlur=0;g.fillStyle='#0006';for(let q=y;q<y+h;q+=3)g.fillRect(x,q,w,1)}
+  else if(th==='scifi'){g.globalAlpha=0.85;g.fillStyle='#d8eaff';g.fillRect(x,y+2,w,h-4);g.globalAlpha=1;g.strokeStyle='#ffffff';g.lineWidth=1;for(let q=-h;q<w;q+=6){g.beginPath();g.moveTo(x+q,y+h);g.lineTo(x+q+h,y);g.stroke()}}
+  else{const gr=g.createLinearGradient(0,y,0,y+h);gr.addColorStop(0,'#ffffff');gr.addColorStop(0.2,'#d7d9e2');gr.addColorStop(0.6,'#a7aab8');gr.addColorStop(1,'#5d6070');g.fillStyle=gr;g.fillRect(x,y,w,h); // polished silver
+    g.fillStyle='#ffffff40';for(let q=-h;q<w;q+=9){g.beginPath();g.moveTo(x+q,y+h);g.lineTo(x+q+4,y+h);g.lineTo(x+q+4+h,y);g.lineTo(x+q+h,y);g.fill()} // etched ward lines
+    if(th==='fantasy'||th==='infernal'){g.fillStyle='#00000022';for(let q=6;q<w;q+=11)g.fillRect(i?x+w-q:x+q,y+3,1,h-6)}}
+  const sw=(t*3)%(w+40)-20;g.fillStyle='#ffffff';g.globalAlpha=0.55*pulse;g.fillRect(i?x+w-sw-6:x+sw,y+1,6,h-2);g.globalAlpha=1; // a glint running along it
+  g.restore();g.save();g.strokeStyle=`rgba(255,255,255,${0.5+0.4*pulse})`;g.lineWidth=1.5;g.shadowColor='#e8ecff';g.shadowBlur=6*pulse;g.strokeRect(x+0.75,y+0.75,w-1.5,h-1.5);g.restore()}
 function namePlate(th,txt,x,y,i){const T=BT[th];g.save();g.font=T.font;g.textAlign=i?'right':'left';const tw=g.measureText(txt).width,px=i?x-tw-12:x-6,ph=26;
   if(th==='fantasy'){g.fillStyle=T.plate;g.beginPath();g.moveTo(px,y-ph+6);g.lineTo(px+tw+18,y-ph+6);g.lineTo(px+tw+12,y-ph/2+6);g.lineTo(px+tw+18,y+6);g.lineTo(px,y+6);g.lineTo(px+6,y-ph/2+6);g.closePath();g.fill();g.strokeStyle='#8a6a3a';g.lineWidth=1.5;g.stroke()}
   else if(th==='infernal'||th==='scifi'||th==='waste'){g.fillStyle=T.plate+(th==='waste'?'':'e0');rr(px,y-ph+5,tw+18,ph,th==='scifi'?2:4);g.fill();g.strokeStyle=T.edge;g.lineWidth=1.2;g.stroke()}
@@ -2377,7 +2388,7 @@ function hud(){
     const th=barTheme(c),T=BT[th];barFrame(th,x,y,bw,22,i);
     if(f.bars>1){g.fillStyle=T.res;g.globalAlpha=0.55;g.fillRect(x,y,bw,22);g.globalAlpha=1} // the reserve bar underneath
     barFill(th,x,y,bw,22,r,i);const fw=bw*r;
-    if(f.temp>0){const tw=bw*f.temp/f.maxHp,sx=i?x+bw-fw-tw:x+fw;g.fillStyle='#c8c8d0';g.fillRect(Math.max(x,Math.min(x+bw-tw,sx)),y+3,tw,16)}
+    if(f.temp>0){const tw=bw*f.temp/f.maxHp,sx=i?x+bw-fw-tw:x+fw;tempFill(th,Math.max(x,Math.min(x+bw-tw,sx)),y,tw,22,i)} // Life Drinker's shield, styled like the bar it sits on
     if(f.healLock<f.maxHp&&f.healLock>f.hp){const lx=bw*f.healLock/f.maxHp;g.fillStyle='#fff6';g.fillRect(i?x+bw-lx:x+lx-2,y,2,22)} // regen locked until you drop below this mark
     if(f.healLeft>0){g.fillStyle='#7fe08a';g.fillRect(i?x+bw-fw:x+fw-4,y,4,22)}
     g.font='14px Bangers,Impact,sans-serif';g.fillStyle='#fff';g.strokeStyle='#000';g.lineWidth=3;g.textAlign=i?'left':'right';const bt='x'+f.bars;g.strokeText(bt,i?x+4:x+bw-4,y+17);g.fillText(bt,i?x+4:x+bw-4,y+17);
@@ -2402,9 +2413,11 @@ function render(){
   g.drawImage(bg,0,0);
   if(S){
     drawStageBack();drawUnda();drawGiant();drawOverlays('mid');
-    S.zones.forEach(drawZone);
     const order=[...S.f].sort((a,b)=>(a.st==='atk')-(b.st==='atk')),bw=S.f.map(wallState),drawF=f=>drawFighter(f,f.i?'#ff8a8a':'#8fd0ff',RB.on&&!attract?(f.i===RB.me?'YOU':'THEM'):attract||cpuOn[f.i]?'CPU':'P'+(f.i+1));
-    order.filter(f=>bw[f.i]).forEach(drawF);drawOverlays('front');order.filter(f=>!bw[f.i]).forEach(drawF); // fighters up on the wall go behind the battlements, everyone else in front
+    const zBack=z=>z.o!==undefined&&bw[z.o]&&z.y!==undefined&&z.y<=wallTopY()+10; // an area effect sitting up on the wall with its owner (not ground-level ones like the picket line)
+    S.zones.filter(zBack).forEach(drawZone);drawVolleyBack();order.filter(f=>bw[f.i]).forEach(drawF);
+    drawOverlays('front'); // the wall, inn and ground in front of anyone up on the wall walks
+    S.zones.filter(z=>!zBack(z)).forEach(drawZone);order.filter(f=>!bw[f.i]).forEach(drawF);
     drawStageFront();drawBoulder();drawSnow();drawVolley();drawShipDoors();drawBloatfly();drawWater();
     S.proj.forEach(drawProj);
     S.fx.forEach(drawFx);
@@ -2415,13 +2428,21 @@ function render(){
 
 /* ---- input: keyboard, gamepads, touch ---- */
 const keys=new Set(),taps=new Set(); // taps: keys pressed since the last frame, so very quick taps are never lost
-const KEYMAP=[
-  {KeyA:K.L,KeyD:K.R,KeyW:K.U,KeyS:K.B,KeyF:K.LP,KeyG:K.HP,KeyR:K.S1,KeyT:K.S2,KeyH:K.SU},
-  {ArrowLeft:K.L,ArrowRight:K.R,ArrowUp:K.U,ArrowDown:K.B,KeyK:K.LP,KeyL:K.HP,KeyI:K.S1,KeyO:K.S2,KeyP:K.SU,Semicolon:K.SU,
-   Numpad1:K.LP,Numpad2:K.HP,Numpad4:K.S1,Numpad5:K.S2,Numpad3:K.SU},
-];
+/* ---- control bindings: rebindable on the Controls screen, saved in this browser ---- */
+const ACTIONS=[['L','Move left'],['R','Move right'],['U','Jump (press twice for double jump)'],['D','Down: tap on a platform to drop through, hold to block'],['B','Block (hold)'],['LP','Light attack'],['HP','Heavy attack'],['S1','Special 1'],['S2','Special 2'],['SU','Super (when the meter is full; or S1 + S2)']];
+const PAD_FIXED={L:'Stick / D-pad left',R:'Stick / D-pad right',D:'Stick / D-pad down'}; // directions always come from the stick and d-pad
+const DEF_BINDS={kb:[{L:['KeyA'],R:['KeyD'],U:['KeyW'],D:['KeyS'],B:['KeyQ'],LP:['KeyF'],HP:['KeyG'],S1:['KeyR'],S2:['KeyT'],SU:['KeyH']},
+  {L:['ArrowLeft'],R:['ArrowRight'],U:['ArrowUp'],D:['ArrowDown'],B:['KeyJ','Numpad0'],LP:['KeyK','Numpad1'],HP:['KeyL','Numpad2'],S1:['KeyI','Numpad4'],S2:['KeyO','Numpad5'],SU:['KeyP','Semicolon','Numpad3']}],
+  pad:{U:[],B:[4,6],LP:[0],HP:[2],S1:[1],S2:[3],SU:[5,7]}}; // pad: Stick/D-pad up always jumps too
+let BINDS=JSON.parse(JSON.stringify(DEF_BINDS));
+try{const sv=JSON.parse(localStorage.getItem('pb-binds')||'null');if(sv&&sv.kb&&sv.pad){for(let p=0;p<2;p++)for(const[a]of ACTIONS)if(Array.isArray(sv.kb[p]&&sv.kb[p][a]))BINDS.kb[p][a]=sv.kb[p][a];for(const a in DEF_BINDS.pad)if(Array.isArray(sv.pad[a]))BINDS.pad[a]=sv.pad[a]}}catch(e){}
+const KEYMAP=[{},{}];
+function buildKeymap(){for(let p=0;p<2;p++){const m=KEYMAP[p];for(const k in m)delete m[k];for(const[a]of ACTIONS)for(const code of BINDS.kb[p][a]||[])m[code]=(m[code]||0)|K[a]}}
+buildKeymap();
+function saveBinds(){buildKeymap();try{localStorage.setItem('pb-binds',JSON.stringify(BINDS))}catch(e){}}
 const typing=e=>{const t=e.target;return t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)};
 addEventListener('keydown',e=>{
+  if(bindCap&&bindCap.kind==='kb'){e.preventDefault();bindKey(e.code);return} // Controls screen: waiting for a key
   if(typing(e))return; // typing a room code: not a fight input
   if(e.code==='Escape'){if(S&&!attract&&S.phase!=='over'&&mode!=='online')togglePause();return}
   if(S&&!paused&&(KEYMAP[0][e.code]||KEYMAP[1][e.code]))e.preventDefault();
@@ -2442,9 +2463,8 @@ function padDirs(gp){ // stick, standard d-pad buttons, or the 'hat' axis many S
 }
 function padBits(gp,idx){
   if(!gp)return 0;let b=0;const bt=i=>gp.buttons[i]&&gp.buttons[i].pressed,dd=padDirs(gp);
-  if(dd.l)b|=K.L;if(dd.r)b|=K.R;if(dd.u)b|=K.U;
-  if(bt(4)||bt(6)||dd.d)b|=K.B; // block: left shoulder or left trigger (or down), so Block + Up drops through platforms on a pad too
-  if(bt(0))b|=K.LP;if(bt(2))b|=K.HP;if(bt(1))b|=K.S1;if(bt(3))b|=K.S2;if(bt(5)||bt(7))b|=K.SU; // super: right shoulder or right trigger
+  if(dd.l)b|=K.L;if(dd.r)b|=K.R;if(dd.u)b|=K.U;if(dd.d)b|=K.D; // down: tap on a platform to drop, hold to block
+  for(const a in BINDS.pad)for(const k of BINDS.pad[a])if(bt(k))b|=K[a]; // the rebindable buttons (defaults: A light, X heavy, B S1, Y S2, LB/LT block, RB/RT super)
   const st=bt(9);if(st&&!padStartPrev[idx]&&S&&!attract&&S.phase!=='over')togglePause();padStartPrev[idx]=st;
   return b;
 }
@@ -2480,7 +2500,7 @@ TB.forEach(d=>{
   touchEl.appendChild(el);
 });
 const pad=$('pad');let padBit=0;
-function padAt(e){const r=pad.getBoundingClientRect();padBit=e.clientX<r.left+r.width/2?K.L:K.R;syncTouch()}
+function padAt(e){const r=pad.getBoundingClientRect();const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);padBit=(dy>r.height*0.22&&Math.abs(dy)>Math.abs(dx)*0.8?K.D:0)|(Math.abs(dx)>r.width*0.08?(dx<0?K.L:K.R):0);syncTouch()} // slide left/right to move, down to drop through a platform
 pad.addEventListener('pointerdown',e=>{e.preventDefault();pad.setPointerCapture(e.pointerId);padAt(e)});
 pad.addEventListener('pointermove',e=>{if(pad.hasPointerCapture(e.pointerId))padAt(e)});
 ['pointerup','pointercancel'].forEach(n=>pad.addEventListener(n,()=>{padBit=0;syncTouch()}));
@@ -2497,6 +2517,25 @@ function menuMove(scr,dx,dy){
     if(main<=4)continue;const sc=main+side*2.5;if(sc<bs){bs=sc;best=b}}
   if(best)menuFocus(best)}
 function menuFocus(b){document.querySelectorAll('.padfocus').forEach(x=>x.classList.remove('padfocus'));b.classList.add('padfocus');b.focus({preventScroll:true});b.scrollIntoView({block:'nearest',behavior:'smooth'})}
+let bindCap=null; // {kind:'kb'|'pad', p, a}: waiting for a key/button on the Controls screen
+const PADNAMES=['A','B','X','Y','LB','RB','LT','RT','Back','Start','L3','R3','D-up','D-down','D-left','D-right','Home'];
+function keyName(c){const m={ArrowLeft:'←',ArrowRight:'→',ArrowUp:'↑',ArrowDown:'↓',Semicolon:';',Quote:"'",Comma:',',Period:'.',Slash:'/',Backslash:'\\',BracketLeft:'[',BracketRight:']',Minus:'-',Equal:'=',Backquote:'`',Space:'Space',Enter:'Enter',ShiftLeft:'L Shift',ShiftRight:'R Shift',ControlLeft:'L Ctrl',ControlRight:'R Ctrl',AltLeft:'L Alt',AltRight:'R Alt',Tab:'Tab'};
+  return m[c]||c.replace(/^Key/,'').replace(/^Digit/,'').replace(/^Numpad/,'Num')}
+function bindUI(){const cell=(kind,p,a,txt,fixed)=>fixed?`<td class="note">${txt}</td>`:`<td><button type="button" class="pill bind${bindCap&&bindCap.kind===kind&&bindCap.p===p&&bindCap.a===a?' sel':''}" data-bk="${kind}" data-bp="${p}" data-ba="${a}">${bindCap&&bindCap.kind===kind&&bindCap.p===p&&bindCap.a===a?(kind==='pad'?'Press a button…':'Press a key…'):txt||'<span class="note">none</span>'}</button></td>`;
+  $('bindTable').innerHTML='<thead><tr><th>Action</th><th>Player 1</th><th>Player 2</th><th>Controller</th></tr></thead><tbody>'+ACTIONS.map(([a,n])=>'<tr><td>'+n+'</td>'+
+    [0,1].map(p=>cell('kb',p,a,(BINDS.kb[p][a]||[]).map(c=>'<kbd>'+keyName(c)+'</kbd>').join(' '))).join('')+
+    cell('pad',0,a,PAD_FIXED[a]||((a==='U'?'Stick / D-pad up':'')+((BINDS.pad[a]||[]).length?(a==='U'?' or ':'')+(BINDS.pad[a]||[]).map(k=>'<kbd>'+(PADNAMES[k]||'Button '+k)+'</kbd>').join(' '):'')),!!PAD_FIXED[a])+'</tr>').join('')+
+    '<tr><td>Pause</td><td colspan="2"><kbd>Esc</kbd></td><td><kbd>Start</kbd></td></tr></tbody>'}
+function bindKey(code){const c=bindCap;bindCap=null;
+  if(code!=='Escape'){if(code==='Backspace')BINDS.kb[c.p][c.a]=[];else{for(let p=0;p<2;p++)for(const[a]of ACTIONS)BINDS.kb[p][a]=(BINDS.kb[p][a]||[]).filter(x=>x!==code); // a key does one thing for one player
+    BINDS.kb[c.p][c.a]=[code]}saveBinds()}bindUI()}
+let bindPadPrev=null;
+function bindPadPoll(pads){const down=new Set();pads.forEach(gp=>gp.buttons.forEach((b,k)=>{if(b&&b.pressed&&k!==9&&(k<12||k>15))down.add(k)}));
+  if(bindPadPrev===null){bindPadPrev=down;return} // ignore whatever was already held when the cell was picked
+  for(const k of down)if(!bindPadPrev.has(k)){const c=bindCap;bindCap=null;bindPadPrev=null;for(const a in BINDS.pad)BINDS.pad[a]=BINDS.pad[a].filter(x=>x!==k);(BINDS.pad[c.a]=BINDS.pad[c.a]||[]);BINDS.pad[c.a]=[k];saveBinds();bindUI();return}
+  bindPadPrev=down}
+$('bindTable').addEventListener('click',e=>{const b=e.target.closest('[data-bk]');if(!b)return;bindCap={kind:b.dataset.bk,p:+b.dataset.bp,a:b.dataset.ba};bindPadPrev=null;bindUI()});
+$('bindReset').onclick=()=>{BINDS=JSON.parse(JSON.stringify(DEF_BINDS));bindCap=null;saveBinds();bindUI()};
 function menuBack(scr){const b=scr.querySelector('#selBack,#stBack,#pResume,[data-go=title],#oQuit');if(b)b.click()}
 function menuPoll(){requestAnimationFrame(menuPoll);
   const pads=padsNow(),badge=$('padBadge'),scr=document.querySelector('.screen.on');
@@ -2504,6 +2543,7 @@ function menuPoll(){requestAnimationFrame(menuPoll);
   if(scr)badge.textContent=padErr?'Controllers are blocked here ('+padErr+'). Try opening the game in its own tab.':
     pads.length?'🎮 '+pads.map((p,i)=>'P'+(i+1)+': '+p.id.replace(/\s*\(.*$/,'').slice(0,32)).join('   ')+'   (D-pad moves, A picks, B back)':'🎮 No controller seen yet: press any button on it';
   if(!scr){padMenu.scr=null;return}
+  if(bindCap&&bindCap.kind==='pad'){bindPadPoll(pads);return}
   const fresh=padMenu.scr!==scr.id;padMenu.scr=scr.id; // a menu just opened: ignore buttons already held from the fight
   pads.forEach((gp,i)=>{const bt=k=>gp.buttons[k]&&gp.buttons[k].pressed,dd=padDirs(gp),now={l:dd.l,r:dd.r,u:dd.u,d:dd.d,a:bt(0),b:bt(1),st:bt(9)},pv=fresh?{a:true,b:true,dk:'x'}:(padMenu.prev[i]||{});
     const dir=now.l?[-1,0]:now.r?[1,0]:now.u?[0,-1]:now.d?[0,1]:null,dk=dir?dir.join():'';
@@ -2733,7 +2773,7 @@ $('selInfo').addEventListener('click',e=>{const id=e.target.id;
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(!b)return;const go=b.dataset.go;
   if(go==='online'){show('sOnline');netStatus('');return}
   if(go==='settings'){const cur=document.querySelector('.screen.on');setFrom=cur?cur.id:'sTitle';show('sSettings');setUI();return}
-  if(go==='title')show('sTitle');else if(go==='controls')show('sControls');else if(go==='viewer'){show('sViewer');viewerUI()}
+  if(go==='title')show('sTitle');else if(go==='controls'){bindCap=null;show('sControls');bindUI()}else if(go==='viewer'){show('sViewer');viewerUI()}
   else{mode=go;cpuOn=go==='solo'?[false,true]:go==='versus'?[false,false]:[true,true];openSelect()}});
 
 /* ---- sprite viewer ---- */
@@ -2799,13 +2839,13 @@ const STAGE_INFO={ // details for the stage screen; 'fav'/'unf' name roles, neve
   erebus:{hz:'Unda',hzd:'The vortex in the middle churns and chips anyone standing in it. Every so often the water stirs and the water elemental Unda bursts out, launching anyone in or above the vortex for a huge hit.',
     feat:['A floating rock over the vortex','Rock shelves up both walls at different heights','Wet stone floor on both sides'],fav:'Rushdown fighters and wildcards who can get in close over the vortex.',unf:'Zoners: the split floor and wall shelves make it hard to keep your distance.'},
   goldenfields:{hz:'Hill giant boulders',hzd:'A hill giant lobs a boulder about every 12 seconds. "INCOMING!" and a shadow mark where it lands: it hits everything in that column, platforms included.',
-    feat:['A big open wheat field on the left, with a hay bale to hop over','Gatehouse wall walks, scaffolding and the inn roof on the right'],fav:'Zoners and ranged fighters: the open wheat field gives room to shoot.',unf:'Grapplers and rushdown fighters, who have to cross all that open ground.'},
+    feat:['A big, flat, open wheat field on the left','The gatehouse and city wall walks, scaffolding, the inn porch and the well roof on the right'],fav:'Zoners and ranged fighters: the open wheat field gives room to shoot.',unf:'Wildcards, and anyone who has to cross all that open ground to get in close.'},
   spine:{hz:'Mountain wind',hzd:'After a calm spell, a gust blows one way for 5 to 9 seconds: walking with it is faster, walking against it is a slog, and it carries jumps.',
     feat:['The slope runs downhill from left to right','Deep snow: everyone is a bit slower and slides when stopping','Fallen trees across the middle, and pine-branch platforms at each end'],fav:'Grapplers and rushdown: the wind and snow drag fights in close.',unf:'Zoners and ranged fighters: gusts and the slope throw off their spacing.'},
-  vogler:{hz:'Fire arrow volleys',hzd:'About every 10 seconds a volley rains down on one third of the town. Platforms block arrows, so get under cover. The arrows leave small fires burning where they land.',
-    feat:['A flat street with four rooftops and walls to fight on','A solid gate tower wall on the right'],fav:'Grapplers and zoners who can hold the rooftops and walls.',unf:'Rushdown fighters and wildcards caught on the open street under the volleys.'},
+  vogler:{hz:'Fire arrow volleys',hzd:'About every 10 seconds a volley rains down on one third of the town. Each arrow has an even chance of stopping on a rooftop or punching through to whatever is below, so cover only half helps: getting out from under the volley is safest. The arrows leave small fires burning where they land.',
+    feat:['A flat street with four rooftops and walls to fight on','A solid gate tower wall on the right'],fav:'Grapplers and zoners who can hold the rooftops and walls.',unf:'Rushdown fighters, who spend the most time out on the open street under the volleys.'},
   ship:{hz:'Airlock venting',hzd:'Every 15 seconds or so one of the two end rooms cycles its airlock: its door slams shut (crushing and stunning anyone in the doorway), then the room drains health and pulls you toward space until it reopens.',
-    feat:['Low gravity: higher, floatier jumps','A central hallway with an upper catwalk','Doors to the two end rooms open when you walk up to them'],fav:'All-rounders, who handle the tight hallway and low gravity well.',unf:'Grapplers and big heavies, who get caught in the slamming doors.'},
+    feat:['Low gravity in the end rooms: higher, floatier jumps, up to a solid roof','A central hallway with an upper catwalk','The only way in or out of an end room is its door, which opens when you walk up to it'],fav:'All-rounders, who handle the tight hallway and low gravity well.',unf:'Grapplers, who struggle to pin anyone in the tight rooms, and zoners, who have nowhere to float away to.'},
   tahoe:{hz:'Bloatflies',hzd:'A bloatfly buzzes in every 13 seconds or so and chases whoever is closest. It bites once and leaves. Any hit or shot swats it.',
     feat:['Ruined rooftops and a water-tower catwalk on the left','Shallow lake water on the right slows you down','A pier and a moored boat to stand on'],fav:'Fairly even. Zoners and heavies have a slight edge.',unf:'Rushdown fighters and all-rounders who get bogged down in the water.'}};
 function startMatch(){attract=false;seed=(Date.now()&0xffffff)|1;S=SIM.newMatch(picks[0],picks[1],seed,stagePick==='random'?Math.floor(Math.random()*STAGES.length):stagePick);cpuMem=[{},{}];paused=false;show(null);acc=0;last=performance.now()}
@@ -2825,7 +2865,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){netSend({t:'select'});netGoSelect(
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.4'; // shown on the title screen; online players must match
+const VERSION='0.2.5'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 (function checkForUpdate(){ // phones cache the page: if the copy on the server is newer, say so

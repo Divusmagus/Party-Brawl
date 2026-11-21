@@ -1,0 +1,56 @@
+PARTY BRAWL - PATCH NOTES v0.2.5
+(Released 2026-11-20)
+
+GOLDENFIELDS
+- The hay bale in the wheat field is gone: the field is flat again.
+- The wall and inn now hide everything behind them properly. Before, only the battlements were redrawn
+  in front of fighters up on the wall walks, so big area effects (like Spirit Guardians) spilled over the
+  wall face. Now the whole wall, inn and ground below the battlements sit in front of fighters on the
+  walks and their area effects. Effects from fighters on the ground still show in front as normal.
+- The lower wall walk now runs all the way to the right edge. The inn roof below it is no longer a
+  separate platform, so there's no more stepping off the roof edge while "behind" the battlements.
+- Balance check after the changes (792 CPU matches): every fighter between 39% and 58%.
+  The stage screen's "Tough for" now says wildcards (they do worst here now); zoners are still favoured.
+
+VOGLER
+- Depth: the gate tower and the city wall now work like Goldenfields. Anyone up on the tower top or the
+  wall walk is drawn behind the battlements and the wall/tower face, along with their area effects and any
+  arrow fires burning up there. Fighters on the street are drawn in front as usual.
+- Fire arrow volleys are a real threat now: each arrow has a 50% chance to stop on any rooftop or
+  platform it meets and a 50% chance to punch straight through to whatever is below. The ground always
+  stops them. Volleys now land all over, not just on the rooftops.
+  (Volley damage per match roughly 2.4x what it was in CPU tests.)
+- Landed arrows now lean the way they flew in: arrows from the right are no longer flipped once they land.
+- The CPU now gets out from under a volley instead of trusting a rooftop to cover it.
+- Balance check (792 CPU matches): every fighter between 42% and 64% (was 35-64%).
+  The stage screen now says Vogler is tough for rushdown fighters; grapplers and zoners are still favoured.
+
+TRAFFICKER SHIP
+- The airlock rooms now have a solid roof. With the low gravity, lighter fighters could jump right out
+  of the top of the stage.
+- The space above each door is now a solid bulkhead all the way up to the roof. The only way in or out
+  of an airlock room is through the doorway itself: you have to come down into the door to get through.
+- A gentle push down in the space between the roof and the door tops, so you don't hang around up in the
+  roof pocket (about 25% less hang time per jump). It shouldn't feel like a barrier.
+- Fixed: a fast-moving fighter could get pushed out on the far side of a wall or door instead of being
+  stopped. Walls now always push you back to the side you came from.
+- Balance check (792 CPU matches): 33-58% (was 31-62%).
+
+CONTROLS
+- Dropping through a platform is now just Down: tap Down (S / Down arrow / stick or d-pad down) while
+  standing on a platform. Holding Down still blocks, and Block + Jump still drops too.
+- Block has its own input now: Q for Player 1, J or Num0 for Player 2, LB/LT on a controller
+  (holding Down also blocks).
+- Phones/tablets: slide down on the move pad to drop through a platform.
+- Controls are rebindable: on the Controls screen, click any key or button and press the new one
+  (Esc cancels, Backspace clears it, Reset to defaults puts everything back). Saved in your browser.
+  Controller directions always come from the stick and d-pad; every button is rebindable, and you can
+  add a jump button if you like.
+
+HUD
+- Frica's Life Drinker shield is no longer a plain grey block on the health bar: it's a silver ward
+  styled to match each health bar theme, with a moving glint and a soft glowing edge.
+
+PORTRAITS
+- All 12 select-screen portraits replaced with a properly transparent version: no more white specks
+  and halos around the edges (the old ones had their white background cut out by hand).
