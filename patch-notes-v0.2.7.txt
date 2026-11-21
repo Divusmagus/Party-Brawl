@@ -1,0 +1,39 @@
+PARTY BRAWL - PATCH NOTES v0.2.7
+Released 2026-11-21
+
+NEW STAGE: DA FUCK DEN (Dragon Heist)
+- The main lobby of the party's inn-turned-brothel, with stuffed David proudly displayed on the
+  front counter.
+- No hazard: a flat lobby floor, an upper floor on each side, and the chandelier hanging over the
+  middle as the highest spot.
+- The chandelier hangs from the ceiling hook and swings as one piece with its chain: it tips like a
+  seesaw toward whoever is standing on it (swinging a little sideways as it does), swings back when
+  they get off, and you slide a little toward the low end if you stand still.
+- Has its own music: the Da Fuck Den jingle.
+- The upper floor wraps round the back of the lobby; only the front end on each side is walkable.
+  Every fighter can jump up to the balconies, and from a balcony to the chandelier.
+- Stuffed David stands in the foreground, close to the camera, in front of the counter.
+- Painted lobby and chandelier; anyone up on a balcony is drawn behind its railing.
+- Balance (792 CPU matches): 35-70%. Tenebrund 70% and Calder 65% like it here; Feng 35% and Big Chief 38% don't.
+
+FIXES
+- Victory screen: pressing B on a controller no longer quits to the title (B is Special 1 in a fight,
+  so mashing it as the match ended could throw you out of a rematch). Controller presses are also
+  ignored for the first second, so end-of-fight button mashing can't pick a menu option.
+
+NEW FIGHTER: SOREN BLACKWELL (Dragonlance)
+- White Robes initiate with silver dragon blood. Wildcard.
+- Passive, Silver Wings: hold Jump while falling to glide.
+- Special 1, Frost Breath: a short cone of freezing breath, several quick hits that chill (slow).
+- Special 2, Guiding Bolt: his signature spell, a bolt of radiant light fired straight ahead. A hit
+  leaves the target glowing for 4 seconds, and his next hit on them does 20% more damage.
+- Super, Silver Dragon: a roar that blasts back anyone close, then 8 seconds as a silver dragon:
+  takes 30% less damage, hits 32% harder, moves faster, and his breath gets bigger.
+- Full pixel-art sprite sheet: brown hair, green eyes, white and gold robes, silver wings.
+- Silver Dragon form has its own big dragon sprite (hovers when airborne, walks, claws, tail sweeps,
+  breathes, casts, roars) instead of a scaled-up Soren. His hitbox stays the same size.
+- Effect sprites: frost breath clouds (bigger in dragon form), the Guiding Bolt and its impact burst,
+  a gold sparkle over a GUIDED target, and a ground shockwave when he roars.
+- Painted select-screen portrait.
+- In dragon form his breath now comes out of the dragon's jaws (it reaches a little further).
+- Balance (432 CPU matches, all stages): ~49% overall. Watch: Tenebrund ~81%; Bof ~28%.
