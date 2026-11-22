@@ -1,0 +1,59 @@
+PARTY BRAWL - PATCH NOTES v0.2.10
+Released 2026-11-21
+
+BALANCE
+- Calder Grimm, Overdose (super): toned down after playtesting.
+  - A repeat chem no longer stacks to double strength. It just resets that chem's timer.
+  - Removed the double damage to shields. That was meant to go when the darts were made to
+    get through blocks, and was left in by mistake. The chems still get through a block.
+  - The six-dart cycle (all five chems in a random order, then one random) is unchanged.
+- Calder Grimm, Hunting Rifle: damage 105 -> 95.
+- Calder Grimm, Field Chemist (passive): new chem, Psycho. For 6s he deals 25% more damage.
+  It joins Jet, Med-X, Addictol and Stimpak, so each craft is now a 1-in-5 pick.
+- CPU testing: Calder's average win rate across all stages goes from about 57% to about 50%.
+
+DASK REWORK
+- Dask Action is now part of his passive (Bear Totem). When a big hit is about to land, he has a chance to bolt
+  backwards out of the way, untouchable, and the hit misses. The harder the hit, the likelier: about 10% at
+  90 damage, 25% at 120, up to 35% at 140+. 20 second cooldown.
+- New Special 2, Barbarian Charge: he sprints straight at the opponent (about 200 units) and ends in a shoulder
+  barge (25 damage, light knockback). His gap closer. 6 second cooldown.
+- Bear Totem: 15% less Physical damage -> 5% less damage from every type except Psychic.
+- Reckless Rage: hits 34/34/56 -> 30/30/50 (base, before his power), and a shorter lunge (about 125 -> 95 units).
+- Power: 1.12 -> 1.06. The new tools made him much stronger in testing (up to ~67-82% before this),
+  so his damage comes down a little to pay for them.
+- CPU testing: about 54% before, about 51% after.
+
+TEDD REWORK
+- Pain Train finally drags people like it was always meant to. Before, Tedd and his victim shoved each other
+  apart every frame, so he just ran into them like a wall. Now he carries them along (about 290 units across
+  open ground) and they take damage the whole way.
+  - A full drag in the open does about 60 damage in total.
+  - If he pins them against the edge of the stage, he stops, the damage per tick doubles from then on, and
+    the final slam adds the +30 wall bonus (WALL SPLAT!). A long drag into a wall does about 125.
+  - Cooldown: 3.3s -> 7s. The working drag is much stronger than the old one.
+- WANNA BE FRIENDS? (super): he now lunges forward about 110 units while reaching, and the grab reaches further
+  (85 + the target's half-width, was 60) and catches short hops. Much harder to step away from.
+  - Hug damage roughly cut in half to pay for it: squeezes 36 -> 22, throw 90 -> 55. About 206 for the whole
+    hug with his power (was about 337).
+- Board with a Nail: cooldown 1.7s -> 2.5s (damage unchanged).
+- Mutant Hide (passive): 35% -> 15% less Poison and Explosive damage.
+- CPU testing: about 60% before, about 56% after. (Fixing the drag alone pushed him to 78%.)
+
+TENEBRUND
+- Shrug It Off: a shrugged hit still does no damage and doesn't stop him, but its other effects now apply:
+  Pain Train's latch and drag, Syringer chems, Guiding Bolt's mark and so on. He's meant to be bulky, not
+  immune. (Before, shrugging Pain Train's 6-damage latch cancelled the whole drag.)
+- Cheese Grater: the dash when nobody is in reach goes about 128 units (was 84). The grab reaches a little
+  further (46 + their half-width, was 42), so it whiffs less. To pay for it, the cooldown is 2s both after
+  a whiff and after a grab (was 1.5s / 1s).
+- CPU testing: Tenebrund about 57% -> about 61% overall.
+
+FENG REWORK
+- New passive, Divine Decree (replaces Healing Word): Pamphlet Toss hits and Spiritual Weapon strikes each mark
+  the target with a stack of Divine Decree, up to 5. His next light or heavy attack that lands (ground or air)
+  spends them all for bonus damage: 1% of the target's max health per stack (about 50 at 5 stacks on a
+  1000-health fighter). Without a new stack, they fade one at a time every 5s. The target shows a DECREE xN tag.
+- Pamphlet Toss now heals him for 25% of its damage. Each quick repeat heals less (25% -> 15% -> 9% -> 5%
+  minimum), and it resets after 4s without a pamphlet hit.
+- CPU testing: about 46% before, about 52% after.

@@ -313,7 +313,7 @@ const CHIEF_NORM=1.0,HAWK_MUL=1.2,HAWK_KB=1.3,BEAR_SHIELD=0.10; // Big Chief: no
 const TOTEMS=[{id:'unicorn',n:'UNICORN TOTEM!',col:'#9bf0a0',hue:0},{id:'bear',n:'BEAR TOTEM!',col:'#d8a060',hue:-95},{id:'hawk',n:'HAWK TOTEM!',col:'#ffd34d',hue:-70}];
 const GUIDE_T=240,GUIDE_BONUS=1.2; // Guiding Bolt: the mark lasts 4s; his next direct hit on them does +20%
 const SOREN_BREATH=13,DRAGON_T=480,DRAGON_TAKE=0.7,DRAGON_HIT=1.32,DRAGON_SPD=1.15,GLIDE_VY=1.8; // Soren: breath damage per puff, dragon form (6s): damage taken / dealt, speed; max fall speed while gliding
-const UNION_BREAK=150,PAX_MUL=1.2,SMOKE_LIFE=240,TOTEM_HEAL=5,TOTEM_DMG=12,DEER_DMG=34,DEER_CD=360,TRAIN_END=52,SMOKE_MISS=[0.5,0.25,0],SMOKE_CRIT=0.3,ACR_DMG=18,TRAIN_V=8.5,TRAIN_BASE=6,TRAIN_PER=1.6,TRAIN_WALL=30,STRIKE_HITS=5,STRIKE_DMG=40,HUG_SQUEEZE=36,HUG_THROW=90,DART_CD=360;
+const UNION_BREAK=150,PAX_MUL=1.2,SMOKE_LIFE=240,TOTEM_HEAL=5,TOTEM_DMG=12,DEER_DMG=34,DEER_CD=360,TRAIN_END=52,SMOKE_MISS=[0.5,0.25,0],SMOKE_CRIT=0.3,ACR_DMG=18,TRAIN_V=8.5,TRAIN_BASE=6,TRAIN_PER=0.95,TRAIN_WALL=30,STRIKE_HITS=5,STRIKE_DMG=40,HUG_SQUEEZE=22,HUG_THROW=55,DART_CD=360;
 // Calder's syringer: each dart uses one chem that's ready; that chem then needs DART_CD frames to come back
 const MUSIC={ // song files by slot; null = no song yet, so the code-made chiptune plays
   menu:'music/menu.mp3' /* Shadow Protocol */,victory:'music/victory.mp3' /* plays once, then the menu music */,
@@ -324,7 +324,7 @@ const MUSIC={ // song files by slot; null = no song yet, so the code-made chiptu
     tahoe:'music/stage_fallout.mp3'}, // Neon Under Nuclear Skies (Fallout)
   themes:{frica:'music/theme_frica.mp3',madog:'music/theme_madog.mp3',soren:'music/theme_soren.mp3' /* Silver Flames */}}; // character themes
 const hasTheme=ci=>!!MUSIC.themes[CH[ci].id];
-const CRAFT_MIN=720,CRAFT_VAR=481,JET_T=360,MEDX_T=360,JET_SPD=1.25,MEDX_TAKE=0.75,STIM_HEAL=0.07; // Calder's Field Chemist: 12-20s between crafts, 6s effects
+const CRAFT_MIN=720,CRAFT_VAR=481,JET_T=360,MEDX_T=360,JET_SPD=1.25,MEDX_TAKE=0.75,STIM_HEAL=0.07,PSYCHO_T=360,PSYCHO_MUL=1.25; // Calder's Field Chemist: 12-20s between crafts, 6s effects
 const CHEM_SHOW=[240,50,300,60,300]; // how long each chem's icon floats over them (frames)
 const CHEMS=[
  {n:'SCORPION VENOM!',col:'#9bd35a',fx:(s,a,d)=>{d.poison=Math.max(d.poison,240)}},
@@ -334,12 +334,12 @@ const CHEMS=[
  {n:'BERSERK!',col:'#ff5a3a',fx:(s,a,d)=>{d.berserk=Math.max(d.berserk,300)}}];
 function inSmoke(s,f,owner){const h=hurt(f);return s.zones.some(z=>z.k==='smoke'&&z.o===owner&&ov([z.x-z.w/2,z.y-z.h,z.w,z.h],h)&&!doorBetween(s,z.x,f.x))}
 const OD_T=[240,50,300,0,300]; // Overdose chem durations (frames): venom, tranq stun, pax, Yellow Belly's slow (none), berserk = the normal ones. Tested: 2x durations put Calder at ~66%, 1.5x at ~65%, these at ~57%
-function odChem(s,a,d,q){ // an Overdose dart's chem: lasts twice as long; if that effect is still on them, it stacks (double strength) and the timer resets
+function odChem(s,a,d,q){ // an Overdose dart's chem; a repeat just resets the timer (stacking to double strength removed in v0.2.10)
   if(d.st==='ko')return;s.fx.push({k:'cdhit',x:d.x,y:d.y-62,life:18,t:0});let st=false;
-  if(q===0){st=d.poison>0;d.poison=OD_T[0];d.poisonLv=st?2:Math.max(1,d.poisonLv||0)}
+  if(q===0){st=d.poison>0;d.poison=OD_T[0];d.poisonLv=Math.max(1,d.poisonLv||0)}
   else if(q===1){st=d.st==='stun'&&d.softStun;d.st='stun';d.t=0;d.stunLen=OD_T[1];d.softStun=1;d.mv=null;d.vx=0}
-  else if(q===2){st=d.pax>0;d.pax=OD_T[2];d.paxLv=st?2:Math.max(1,d.paxLv||0)}
-  else if(q===3){st=!!d.ybT&&s.frame-d.ybT<300;CHEMS[3].fx(s,a,d);if(st){d.vx*=1.5;d.vy*=1.3}d.ybT=s.frame;if(OD_T[3]){d.slow=OD_T[3];d.slowLv=st?2:1}} // a repeat within 5s knocks them back harder
+  else if(q===2){st=d.pax>0;d.pax=OD_T[2];d.paxLv=Math.max(1,d.paxLv||0)}
+  else if(q===3){st=!!d.ybT&&s.frame-d.ybT<300;CHEMS[3].fx(s,a,d);d.ybT=s.frame;if(OD_T[3]){d.slow=OD_T[3];d.slowLv=st?2:1}} // a repeat within 5s knocks them back harder
   else{st=d.berserk>0;d.berserk=OD_T[4]}
   d.chemQ=q;d.chemEnd=s.frame+CHEM_SHOW[q]*2;say(s,d.x,d.y-120,CHEMS[q].n.replace('!','')+(st?' x2!':'!'),CHEMS[q].col,st?32:26)}
 function chem(s,a,d,any){ // pick a chem: a ready one (or any one, for Overdose)
@@ -384,12 +384,12 @@ const CH=[
     start:(s,a)=>{say(s,a.x,a.y-130,'OH YEAH!!!','#ff3e6c',54);s.shake=14;s.fx.push({k:'bricks',x:a.x-a.face*30,y:a.y-50,life:50,t:0,dir:a.face})}}),
  })},
 {id:'feng',name:'Feng',player:'Paul',camp:'Remnants of the Damned',role:'All-rounder',types:{s2:'Energy',su:'Light'},
- passive:{n:'Healing Word',d:'Every 7s, a 30% chance to heal 15% of his missing health. After it works, it rests for 20s'},
+ passive:{n:'Divine Decree',d:'Pamphlets and Spiritual Weapon strikes mark the target with Divine Decree (up to 5 stacks; without a new one, they fade one at a time every 5s). His next light or heavy attack that lands spends them all for bonus damage: 1% of the target\'s max health per stack'},
  col:'#f2ead6',col2:'#d9a12b',skin:'#a7b48a',w:44,h:94,hp:1020,spd:4.2,jump:-15,weight:1,pow:1.08,
  blurb:'Half-orc war cleric of Wicos, god of law. Has a mace, and pamphlets. Will hand you one.',
  moves:Object.assign(normals({reach:6,light:1.2}),{
-  s1:mv({n:'Pamphlet Toss',d:'Flies straight for a short distance, then curves down. The One True Law, delivered',su:12,ac:1,re:16,dmg:0,box:[0,0,0,0],cd:40,
-    tick:(s,a,f)=>{if(f===12)proj(s,a,{kind:'pamph',y:a.y-58,vx:a.face*8.5,vy:0,g:0,curveAt:26,g2:0.3,w:22,h:16,life:140,dmg:44,kb:[5,-3],hs:18})}}),
+  s1:mv({n:'Pamphlet Toss',d:'Flies straight for a short distance, then curves down. A hit heals him for 25% of the damage, less for each quick repeat (down to 5%; resets after 4s without one). The One True Law, delivered',su:12,ac:1,re:16,dmg:0,box:[0,0,0,0],cd:40,
+    tick:(s,a,f)=>{if(f===12)proj(s,a,{kind:'pamph',y:a.y-58,vx:a.face*8.5,vy:0,g:0,curveAt:26,g2:0.3,w:22,h:16,life:140,dmg:44,kb:[5,-3],hs:18,onHit:(s,a,d,p)=>{fengDecree(s,a,d);fengPamphHeal(s,a,p)}})}}),
   s2:mv({n:'Spiritual Weapon',d:'Summons a floating spectral mace that chases the enemy and strikes 3 times',su:14,ac:1,re:12,dmg:0,box:[0,0,0,0],cd:420,
     tick:(s,a,f)=>{if(f===14){s.zones=s.zones.filter(z=>!(z.k==='sw'&&z.o===a.i));s.zones.push({k:'sw',o:a.i,x:a.x+a.face*40,y:a.y-110,life:260,tk:0,n:0,swing:0,face:a.face});say(s,a.x,a.y-120,'SPIRITUAL WEAPON!','#ffd34d',24)}}}),
   su:mv({n:'Wicos Wills It',d:'Charged pillar of holy light in front of Feng',su:22,ac:1,re:28,dmg:0,box:[0,0,0,0],inv:[0,22],
@@ -397,12 +397,12 @@ const CH=[
     tick:(s,a,f)=>{if(f===20){s.zones.push({k:'pillar',o:a.i,x:a.x+a.face*170,w:230,delay:0,act:16,dmg:270,col:'#ffd34d',hit:0});s.shake=12}}}),
  })},
 {id:'tenebrund',name:'Tenebrund Stoneshaft',player:'Jay',camp:'Descent into Avernus',role:'Grappler',types:{s2:'Poison'},
- passive:{n:'Shrug It Off',d:'While walking, ignores one hit of 60 damage or less, then needs 3s to recharge'},
+ passive:{n:'Shrug It Off',d:'While walking, one hit of 60 or less does no damage and doesn\'t stop him (its other effects, like chems or latches, still apply), then needs 3s to recharge'},
  walkArmor:true,col:'#7a5a3a',col2:'#9aa0a8',skin:'#d9a07f',w:66,h:86,hp:1140,spd:3.4,jump:-13.5,weight:1.4,pow:1.15,
- blurb:'Battlerager dwarf in spiked armor. Shrugs off a small hit while he waddles in (big hits still land). Fears soap.',
+ blurb:'Battlerager dwarf in spiked armor. Shrugs off the damage of a small hit while he waddles in (big hits still land). Fears soap.',
  moves:Object.assign(normals({reach:4}),{
-  s1:mv({n:'Cheese Grater',d:'Unblockable grab: grinds them on his spikes, then throws. If nobody is in reach when pressed, he does a short dash instead (no grab)',su:12,ac:4,re:32,dmg:0,box:[10,-80,32,70],grab:true,cd:90,
-    start:(s,a)=>{const d=opp(s,a);if(Math.abs(d.x-a.x)>42+CH[d.c].w/2){a.md.dash=1;a.cd.s1=TEN_DASH_CD}},
+  s1:mv({n:'Cheese Grater',d:'Unblockable grab: grinds them on his spikes, then throws. If nobody is in reach when pressed, he dashes forward instead (no grab)',su:12,ac:4,re:32,dmg:0,box:[10,-80,36,70],grab:true,cd:120,
+    start:(s,a)=>{const d=opp(s,a);if(Math.abs(d.x-a.x)>46+CH[d.c].w/2){a.md.dash=1;a.cd.s1=TEN_DASH_CD}},
     tick:(s,a,f,m)=>{if(!a.md.dash)return;if(f<TEN_DASH_F&&a.ground)a.vx=a.face*TEN_DASH_V;else if(f===TEN_DASH_F)a.mf=m.len-8}}),
   s2:mv({n:'Stink Cloud',d:'Leaves a cloud that slows and chips anyone inside',su:16,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:420,
     tick:(s,a,f)=>{if(f===16){s.zones.push({k:'stink',o:a.i,x:a.x,y:a.y,w:220,h:160,life:300,tk:0});say(s,a.x,a.y-110,'*SNIFF*','#9bd35a',24)}}}),
@@ -427,16 +427,19 @@ const CH=[
     start:(s,a)=>say(s,a.x,a.y-130,'BUBBLES, NO!','#ffd34d',44),
     tick:(s,a,f)=>{if(f>=12&&f<=56&&f%4===0){const k=(f/4)%3;proj(s,a,{kind:'bullet',y:a.y-(k===0?90:k===1?60:30),vx:a.face*15,w:14,h:8,life:80,dmg:30,kb:[3,-1],hs:16})}}}),
  })},
-{id:'dask',name:'Dask',player:'Dan',camp:"Storm King's Thunder",role:'Rushdown',resist:{Physical:0.15},
- passive:{n:'Bear Totem',d:'Takes 15% less Physical damage. Magic (every other damage type) hits him in full'},
- col:'#5b7a3a',col2:'#6e4a2a',skin:'#8fae6a',w:46,h:92,hp:900,spd:5.4,jump:-16,weight:0.9,pow:1.12,
+{id:'dask',name:'Dask',player:'Dan',camp:"Storm King's Thunder",role:'Rushdown',resist:{Physical:0.05,Poison:0.05,Light:0.05,Dark:0.05,Fire:0.05,Lightning:0.05,Ice:0.05,Energy:0.05,Explosive:0.05,Sonic:0.05}, // every type but Psychic
+ passive:{n:'Bear Totem',d:'Takes 5% less damage from everything except Psychic. Dask Action: a big hit has a chance to miss as he bolts backwards out of the way, untouchable. The harder the hit, the likelier (up to 35%). 20s cooldown'},
+ col:'#5b7a3a',col2:'#6e4a2a',skin:'#8fae6a',w:46,h:92,hp:900,spd:5.4,jump:-16,weight:0.9,pow:1.06,
  blurb:'Half-orc barbarian. Fast, furious, and the namesake of the Dask action.',
  moves:Object.assign(normals({reach:10}),{
-  s1:mv({n:'Reckless Rage',d:'Three-hit rushing axe combo. Leaves him RECKLESS: he takes 20% more damage for 6s. Long 4s cooldown',su:6,re:14,len:34,dmg:34,box:[6,-80,60,40],kb:[3,-1],hs:16,wins:[[6,9],[12,15],[18,22]],mv:[[4,22,7]],cd:240,
+  s1:mv({n:'Reckless Rage',d:'Three-hit rushing axe combo. Leaves him RECKLESS: he takes 20% more damage for 6s. Long 4s cooldown',su:6,re:14,len:34,dmg:34,box:[6,-80,60,40],kb:[3,-1],hs:16,wins:[[6,9],[12,15],[18,22]],mv:[[4,20,6]],cd:240,
     start:(s,a)=>{a.reckless=360},
     onHit:(s,a,d)=>s.fx.push({k:'dslash',x:(a.x+d.x)/2+a.face*10,y:d.y-50,life:12,t:0,dir:a.face}),
-    dmgs:[34,34,56],kbs:[[3,-1],[3,-1],[9,-6]]}),
-  s2:mv({n:'Dask Action',d:'Invincible full-speed retreat. Classic. Slow to recover, so don\'t use it point-blank',su:1,ac:1,re:6,len:36,dmg:0,box:[0,0,0,0],inv:[0,20],mv:[[0,20,-15]],cd:80,
+    dmgs:[30,30,50],kbs:[[3,-1],[3,-1],[9,-6]]}),
+  s2:mv({n:'Barbarian Charge',d:'Sprints straight at them and ends in a shoulder barge. A way in, not a big hit',su:4,re:18,len:34,dmg:25,box:[8,-84,46,74],kb:[6,-3],hs:12,wins:[[6,20]],mv:[[2,20,13]],cd:360,
+    start:(s,a)=>{say(s,a.x,a.y-120,'CHAAARGE!','#b6f06a',26);s.fx.push({k:'ddust',x:a.x,y:a.y,life:20,t:0,dir:-a.face})},
+    onHit:(s,a,d)=>{a.mf=Math.max(a.mf,20);a.vx=0}}), // stop on contact instead of running through them
+  dact:mv({n:'Dask Action',d:'(passive) bolts backwards out of the way, untouchable',su:1,ac:1,re:4,len:28,dmg:0,box:[0,0,0,0],inv:[0,22],mv:[[0,20,-15]],
     start:(s,a)=>{say(s,a.x,a.y-120,'DASK ACTION!','#b6f06a',28);s.fx.push({k:'ddust',x:a.x,y:a.y,life:20,t:0,dir:a.face})}}),
   su:mv({n:'Rage Unleashed',d:'Five-hit rampage across the arena',su:10,re:24,len:76,dmg:46,box:[0,-86,68,80],kb:[4,-2],hs:24,inv:[0,10],
     wins:[[10,13],[20,23],[30,33],[40,43],[50,55]],dmgs:[46,46,46,46,96],kbs:[[4,-2],[4,-2],[4,-2],[4,-2],[16,-10]],mv:[[8,56,9.5]],
@@ -444,19 +447,19 @@ const CH=[
     onHit:(s,a,d)=>s.fx.push(a.mf>=50?{k:'dfinish',x:d.x,y:Math.min(FLOOR,d.y),life:28,t:0,dir:a.face}:{k:'dslash',x:(a.x+d.x)/2+a.face*10,y:d.y-50,life:12,t:0,dir:a.face})}),
  })},
 {id:'calder',name:'Calder Grimm',player:'Jon',camp:'Fallout',role:'Zoner',types:{s2:'Poison',su:'Poison'},
- passive:{n:'Field Chemist',d:'Every 12-20s he whips up a random chem: Jet (25% faster and cooldowns recover 50% faster for 6s), Med-X (25% less damage taken for 6s), Addictol (clears poison, Pax, Berserk, MUDDLED, hexes and slows) or a Stimpak (heals 7% of max health)'},suAny:1,
+ passive:{n:'Field Chemist',d:'Every 12-20s he whips up a random chem: Jet (25% faster and cooldowns recover 50% faster for 6s), Med-X (25% less damage taken for 6s), Psycho (25% more damage for 6s), Addictol (clears poison, Pax, Berserk, MUDDLED, hexes and slows) or a Stimpak (heals 7% of max health)'},suAny:1,
  col:'#e8e4d8',col2:'#4a6a5a',skin:'#e0b48e',w:42,h:90,hp:950,spd:4.2,jump:-15,weight:0.95,pow:1.08,
  blurb:'Followers of the Apocalypse doctor. Hunting rifle, a syringer, and a bag of very questionable chems.',
  moves:Object.assign(normals({reach:6}),{
   s1:mv({n:'Hunting Rifle',d:'Slow to aim, then one fast, hard-hitting shot across the arena',su:20,ac:1,re:18,dmg:0,box:[0,0,0,0],cd:150,
-    tick:(s,a,f)=>{if(f===20){proj(s,a,{kind:'rifle',y:a.y-66,vx:a.face*20,w:24,h:8,life:60,dmg:105,kb:[7,-3],hs:20});s.fx.push({k:'cmuzzle',x:a.x+a.face*52,y:a.y-66,col:'#ffd34d',life:8,t:0})}}}),
+    tick:(s,a,f)=>{if(f===20){proj(s,a,{kind:'rifle',y:a.y-66,vx:a.face*20,w:24,h:8,life:60,dmg:95,kb:[7,-3],hs:20});s.fx.push({k:'cmuzzle',x:a.x+a.face*52,y:a.y-66,col:'#ffd34d',life:8,t:0})}}}),
   s2:mv({n:'Syringer',d:'Fires a dart loaded with a random chem: Scorpion Venom (poison), Tranquilizer (stun), Pax (takes 20% more damage), Yellow Belly (big knockback) or Berserk (can\'t block). Each chem needs 6s to come back once used',su:10,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:80,
     tick:(s,a,f)=>{if(f===10)proj(s,a,{kind:'dart',y:a.y-64,vx:a.face*12,w:20,h:8,life:90,dmg:28,kb:[3,-1],hs:16,onHit:(s,a,d)=>chem(s,a,d,false)})}}),
-  su:mv({n:'Overdose',d:'Six syringes: the first five are all five chems in a random order, the sixth is random. Chems get through a block (and hit the shield twice as hard), and a repeat chem stacks: double strength, timer reset',su:12,ac:1,re:20,len:74,dmg:0,box:[0,0,0,0],inv:[0,12],
+  su:mv({n:'Overdose',d:'Six syringes: the first five are all five chems in a random order, the sixth is random. Chems get through a block, and a repeat chem resets its timer',su:12,ac:1,re:20,len:74,dmg:0,box:[0,0,0,0],inv:[0,12],
     start:(s,a)=>say(s,a.x,a.y-130,'TIME FOR YOUR MEDICINE!','#9bf0a0',36),
     tick:(s,a,f)=>{if(f===12){const b=[0,1,2,3,4];for(let k=4;k>0;k--){const j=Math.floor(rngNext(s)*(k+1));[b[k],b[j]]=[b[j],b[k]]}a.odBag=b} // darts 1-5: each chem once, shuffled
       if(f>=12&&f<=52&&(f-12)%8===0){const n=(f-12)/8,q=n<5?a.odBag[n]:Math.floor(rngNext(s)*5); // dart 6: any chem (a repeat stacks)
-        proj(s,a,{kind:'dart',big:1,y:a.y-(f%16?78:56),vx:a.face*13,w:22,h:9,life:90,dmg:30,kb:[3,-1],hs:16,odq:q,pierce:1,shieldMul:2,onHit:(s,a,d,p)=>odChem(s,a,d,p.odq)})}}}),
+        proj(s,a,{kind:'dart',big:1,y:a.y-(f%16?78:56),vx:a.face*13,w:22,h:9,life:90,dmg:30,kb:[3,-1],hs:16,odq:q,pierce:1,onHit:(s,a,d,p)=>odChem(s,a,d,p.odq)})}}}),
  })},
 {id:'heavyrail',name:'Heavy Rail',player:'Matt',camp:'Fallout',role:'Heavy',types:{s1:'Energy',s2:'Energy',su:'Explosive'},
  passive:{n:'Power Armor',d:'Takes 25% less knockback from everything'},kbMul:0.75,suAny:1,farS1:0.14,
@@ -488,31 +491,34 @@ const CH=[
     tick:(s,a,f)=>{if(f===20||f===32||f===44){const k=(f-20)/12;s.proj.push({src:'su',o:a.i,x:a.face>0?-40:W+40,y:a.y-[92,58,26][k],vx:a.face*17,vy:0,g:0,w:80,h:22,life:90,t:0,dmg:85,kb:[10,-6],hs:24,kind:'shiplaser'})}}}),
  })},
 {id:'tedd',name:'Tedd the Friendly',player:'Jay',camp:'Fallout',role:'Heavy',types:{l:'Fire',h:'Fire',al:'Fire',ah:'Fire'},
- passive:{n:'Mutant Hide',d:'Takes 35% less Poison and Explosive damage'},resist:{Poison:0.35,Explosive:0.35},
+ passive:{n:'Mutant Hide',d:'Takes 15% less Poison and Explosive damage'},resist:{Poison:0.15,Explosive:0.15},
  col:'#8a9a4a',col2:'#7a2a1a',skin:'#93a44e',w:60,h:106,hp:1350,spd:3.8,jump:-13.5,weight:1.45,pow:1.25,
  blurb:'Super mutant who just wants to make friends. Swings a flaming Shishkebab while he asks.',
  moves:Object.assign(normals({reach:22}),{
-  s1:mv({n:'Pain Train',d:'Charges forward and drags anyone he hits along with him. The longer they are dragged, the more it hurts, and slamming them into a wall hurts most. A tap is just a gap closer',su:10,ac:1,re:20,len:TRAIN_END+20,dmg:0,box:[0,0,0,0],cd:200,mv:[[8,TRAIN_END,TRAIN_V]],
+  s1:mv({n:'Pain Train',d:'Charges forward and carries anyone he hits along with him, hurting them the whole way. Pin them against a wall and it hurts twice as much from then on, plus a big slam at the end. A tap is just a gap closer',su:10,ac:1,re:20,len:TRAIN_END+20,dmg:0,box:[0,0,0,0],cd:420,mv:[[8,TRAIN_END,TRAIN_V]],
     start:(s,a)=>say(s,a.x,a.y-125,'PAIN TRAIN!','#ff8a1a',30),
     tick:(s,a,f,m)=>{const d=opp(s,a);
       if(f>=8&&f<TRAIN_END&&f%5===0)s.fx.push({k:'ttrain',x:a.x-a.face*34,y:a.y,dir:a.face,life:15,t:0});
       if(a.md.drag===undefined&&f>=8&&f<TRAIN_END&&ov(hbox(a,[0,-100,40,96]),hurt(d))){ // contact: grab them onto the front of the train
-        if(hitF(s,a,d,{dmg:6,kb:[0,0],hs:30,src:'s1'})&&d.st==='hit'){a.md.drag=0;say(s,d.x,d.y-110,'ALL ABOARD!','#ffd34d',22)}else{a.mf=TRAIN_END;a.vx=-a.face*4}}
+        if(hitF(s,a,d,{dmg:6,kb:[0,0],hs:30,src:'s1'})&&(d.st==='hit'||d.shrugT===s.frame)){d.st='hit';d.t=0;d.mv=null;d.hst=Math.max(d.hst,6);a.md.drag=0;say(s,d.x,d.y-110,'ALL ABOARD!','#ffd34d',22)}else{a.mf=TRAIN_END;a.vx=-a.face*4}}
       if(a.md.drag!==undefined&&a.md.drag>=0){
-        const gap=(CH[a.c].w+CH[d.c].w)/2-8,hw=CH[d.c].w/2,pinned=a.face>0?a.x+gap>=WALL_R-hw-1:a.x-gap<=WALL_L+hw+1;
+        const gap=(CH[a.c].w+CH[d.c].w)/2-8,hw=CH[d.c].w/2,ahead=a.x+a.face*(gap+Math.abs(a.vx)),pinned=a.face>0?ahead>=WALL_R-hw-1:ahead<=WALL_L+hw+1;
         if(d.st!=='hit'&&d.st!=='down'){a.md.drag=-1;return}
-        a.md.drag++;d.x=Math.max(WALL_L+hw,Math.min(WALL_R-hw,a.x+a.face*gap));d.y=a.y;d.vx=0;d.vy=0;d.hst=Math.max(d.hst,6);d.st='hit';
-        if(a.md.drag%6===0)s.fx.push({k:'spark',x:d.x,y:d.y-50,col:'#ffd34d',life:10,t:0});
-        if(pinned||f>=TRAIN_END-1){const dmg=TRAIN_BASE+TRAIN_PER*a.md.drag+(pinned?TRAIN_WALL:0);a.md.drag=-1;
-          hitF(s,a,d,{dmg:dmg*CH[a.c].pow,kb:[pinned?3:9,pinned?-7:-6],hs:pinned?34:24,launch:true,unb:true,dir:a.face,src:'s1'});
-          if(pinned){if(s.stats)s.stats[a.i].splats=(s.stats[a.i].splats||0)+1;say(s,d.x,d.y-120,'WALL SPLAT!','#ff8a3d',32);s.shake=Math.max(s.shake,12)}
+        a.md.drag++;if(pinned){a.md.pin=1;a.vx=0} // shoved into the wall: he stops, they're stuck, and it hurts twice as much from now on
+        d.x=Math.max(WALL_L+hw,Math.min(WALL_R-hw,pinned?d.x:ahead));if(pinned)a.x=d.x-a.face*gap;
+        d.y=a.y;d.vx=0;d.vy=0;d.hst=Math.max(d.hst,6);d.st='hit';
+        a.md.acc=(a.md.acc||0)+TRAIN_PER*(pinned?2:1);
+        if(a.md.drag%6===0){s.fx.push({k:'spark',x:d.x,y:d.y-50,col:pinned?'#ff8a3d':'#ffd34d',life:10,t:0});const t=Math.floor(a.md.acc);if(t>0){a.md.acc-=t;deal(s,a,d,t*CH[a.c].pow,'s1')}}
+        if(f>=TRAIN_END-1){const dmg=TRAIN_BASE+a.md.acc+(a.md.pin?TRAIN_WALL:0);a.md.drag=-1;const pinnedEnd=!!a.md.pin;
+          hitF(s,a,d,{dmg:dmg*CH[a.c].pow,kb:[pinnedEnd?3:9,pinnedEnd?-7:-6],hs:pinnedEnd?34:24,launch:true,unb:true,dir:a.face,src:'s1'});
+          if(pinnedEnd){if(s.stats)s.stats[a.i].splats=(s.stats[a.i].splats||0)+1;say(s,d.x,d.y-120,'WALL SPLAT!','#ff8a3d',32);s.shake=Math.max(s.shake,12)}
           a.mf=Math.max(a.mf,TRAIN_END);a.vx=0}}}}),
-  s2:mv({n:'Board with a Nail',d:'His backup weapon. A big BONK that knocks them away',su:10,ac:5,re:18,dmg:70,box:[8,-88,72,42],kb:[12,-3],hs:20,cd:100,
+  s2:mv({n:'Board with a Nail',d:'His backup weapon. A big BONK that knocks them away',su:10,ac:5,re:18,dmg:70,box:[8,-88,72,42],kb:[12,-3],hs:20,cd:150,
     onHit:(s,a,d)=>{s.fx.push({k:'tbonk',x:d.x,y:d.y-62,life:18,t:0,col:'#e9c46a'});say(s,d.x,d.y-110,'BONK!','#e9c46a',26)}}),
-  su:mv({n:'WANNA BE FRIENDS?',d:'A crushing, unblockable bear hug, then a friendly toss. Misses if they are out of reach',su:16,ac:8,re:30,len:56,dmg:0,box:[0,0,0,0],
+  su:mv({n:'WANNA BE FRIENDS?',d:'He lunges in arms wide for a crushing, unblockable bear hug, then a friendly toss. Misses if they are out of reach',su:16,ac:8,re:30,len:56,dmg:0,box:[0,0,0,0],mv:[[6,24,6]],
     start:(s,a)=>say(s,a.x,a.y-135,'WANNA BE FRIENDS?','#b6f06a',38),
-    tick:(s,a,f)=>{if(f>=16&&f<24&&!a.md.done){const d=opp(s,a);
-      if(Math.abs(d.x-a.x)<60+CH[d.c].w/2&&Math.abs(d.y-a.y)<60&&d.st!=='ko'&&d.inv<=0&&d.st!=='grabbed'){a.md.done=1;
+    tick:(s,a,f)=>{if(f>=14&&f<26&&!a.md.done){const d=opp(s,a); // lunges ~110 units while reaching; grabs within 85 + their half-width, and catches short hops
+      if(Math.abs(d.x-a.x)<85+CH[d.c].w/2&&Math.abs(d.y-a.y)<85&&d.st!=='ko'&&d.inv<=0&&d.st!=='grabbed'){a.md.done=1;
         a.st='grind';a.t=0;a.mv=null;a.hug=1;a.grab=d.i;d.st='grabbed';d.t=0;d.mv=null;d.counter=0;s.shake=8}}}}),
  })},
 {id:'bof',name:'Bof',player:'Dan',camp:'Fallout',role:'Rushdown',
@@ -566,7 +572,7 @@ const DASK_NORMALS={l:53,h:115};{const dm=CH.find(c=>c.id==='dask').moves;dm.l.d
 CH.forEach((c,i)=>{c.i=i});
 
 /* ---------- state ---------- */
-function newFighter(i,ci,x){const c=CH[ci];return{i,c:ci,x,y:floorY(x),pitT:0,vx:0,vy:0,face:i?-1:1,hp:c.hp,maxHp:c.hp,bubLock:0,missStreak:0,missed:-1,poison:0,poisonLv:0,hawk:0,steady:0,dragon:0,guided:0,tempT:0,burn:0,pax:0,paxLv:0,slowLv:0,berserk:0,softStun:0,brk:0,brkUsed:0,dfx:[0,0,0,0,0],bars:2,calm:0,healLock:c.hp,healLeft:0,temp:0,hwT:0,hwLock:0,stunLen:130,meter:0,st:'idle',t:0,mv:null,mf:0,hitMask:0,md:{},
+function newFighter(i,ci,x){const c=CH[ci];return{i,c:ci,x,y:floorY(x),pitT:0,vx:0,vy:0,face:i?-1:1,hp:c.hp,maxHp:c.hp,bubLock:0,decree:0,decreeT:0,pamphN:0,missStreak:0,missed:-1,poison:0,poisonLv:0,hawk:0,steady:0,dragon:0,guided:0,tempT:0,burn:0,pax:0,paxLv:0,slowLv:0,berserk:0,softStun:0,brk:0,brkUsed:0,dfx:[0,0,0,0,0],bars:2,calm:0,healLock:c.hp,healLeft:0,temp:0,hwT:0,hwLock:0,stunLen:130,meter:0,st:'idle',t:0,mv:null,mf:0,hitMask:0,md:{},
   hst:0,bst:0,inv:0,armor:0,counter:0,hex:0,muddle:0,reckless:0,demonStreak:0,shield:100,walkArmorCd:0,dmgLog:{},punLog:{},slow:0,haste:0,drop:0,jumps:0,ground:true,prev:0,cd:{s1:0,s2:0},combo:0,splat:0,launched:0,grab:-1,wins:0}}
 /* ---------- stage hazards ---------- */
 const UNDA={every:1200,vary:180,chance:0.25,warn:75,act:40,dmg:150}; // ~20s (+/-3s) a roll; 25% Unda bursts from the vortex
@@ -681,8 +687,17 @@ const DMG_TYPES=['Physical','Poison','Light','Dark','Fire','Lightning','Ice','Ps
 function dmgType(a,src){if(!a||src==='wall'||src==='chip')return'Physical';const t=CH[a.c].types;return(t&&t[src])||'Physical'}
 const BARS=2,REGEN_WAIT=180,REGEN_FRAC=0.10,REGEN_TIME=40; // two health bars; regen: 3s untouched heals 10% of missing (once per drop)
 const ARMOR_CAP=80; // damage armour can absorb per move use before it breaks
-const TEN_DASH_F=12,TEN_DASH_V=7,TEN_DASH_CD=30; // dash: ~84 units, then 8 frames recovery
+const TEN_DASH_F=16,TEN_DASH_V=8,TEN_DASH_CD=30; // dash: ~128 units (was 84), then 8 frames recovery
 const MONKEY_CD=420,MONKEY_P=0.40;
+const DECREE_MAX=5,DECREE_PCT=0.01,DECREE_T=300,PAMPH_HEAL=0.25,PAMPH_DECAY=0.6,PAMPH_MIN=0.05,PAMPH_RESET=240;
+function fengDecree(s,a,d){if(!a||CH[a.c].id!=='feng'||d.st==='ko')return;d.decree=Math.min(DECREE_MAX,(d.decree||0)+1);d.decreeT=DECREE_T} // a stack of Divine Decree on the target
+function fengPamphHeal(s,a,p){if(!a||a.st==='ko')return; // 25% of the hit as healing, less for each quick repeat
+  if(s.frame-(a.pamphAt??-9999)>PAMPH_RESET)a.pamphN=0;const fr=Math.max(PAMPH_MIN,PAMPH_HEAL*Math.pow(PAMPH_DECAY,a.pamphN||0));
+  const h=Math.min(a.maxHp-a.hp,Math.round(p.dmg*CH[a.c].pow*fr));a.pamphN=(a.pamphN||0)+1;a.pamphAt=s.frame;if(h>0){a.hp+=h;say(s,a.x,a.y-120,'+'+h,'#ffe9a0',18)}}
+function fengSpend(s,a,d){ // his light/heavy lands: spend every stack as bonus damage (a share of their max health per stack)
+  const n=d.decree||0;if(!n||d.st==='ko')return;d.decree=0;d.decreeT=0;
+  deal(s,a,d,n*DECREE_PCT*d.maxHp,'passive','Light');say(s,d.x,d.y-140,'DIVINE DECREE x'+n+'!','#ffd34d',24+n*2);s.fx.push({k:'ring',x:d.x,y:d.y-50,life:18,t:0,col:'#ffd34d',small:n<4})}
+const DACT_CD=1200,DACT_MIN=70,DACT_SPAN=200,DACT_MAX=0.35; // Dask's passive dodge: chance=(dmg-70)/200, up to 35%, 20s cooldown (90 dmg: 10%, 120: 25%, 140+: 35%)
 function monkeyShield(s,a,d,dir){ // Salty's passive: Bubbles takes the hit and shoves the attacker away
   if(CH[d.c].id!=='salty'||d.bubLock>0||d.st==='ko'||rngNext(s)>=MONKEY_P)return false;
   d.bubLock=MONKEY_CD;d.cd.s1=Math.max(d.cd.s1,MONKEY_CD);
@@ -693,7 +708,7 @@ function monkeyShield(s,a,d,dir){ // Salty's passive: Bubbles takes the hit and 
 function deal(s,a,d,dmg,src,type){
   if(d.brk>0)return 0; // on a union break: untouchable
   type=type||dmgType(a,src);const rs=CH[d.c].resist;
-  const core=dmg*(a&&a!==d&&a.dragon>0?DRAGON_HIT:1)*(d.dragon>0?DRAGON_TAKE:1)*(a&&a!==d&&a.hawk>0?HAWK_MUL:1)*(d.reckless>0?1.2:1)*(d.pax>0?1+(PAX_MUL-1)*(d.paxLv||1):1)*(d.medx>0?MEDX_TAKE:1)*(a&&a!==d&&a.muddle>0?0.75:1);
+  const core=dmg*(a&&a!==d&&a.dragon>0?DRAGON_HIT:1)*(d.dragon>0?DRAGON_TAKE:1)*(a&&a!==d&&a.hawk>0?HAWK_MUL:1)*(a&&a!==d&&a.psycho>0?PSYCHO_MUL:1)*(d.reckless>0?1.2:1)*(d.pax>0?1+(PAX_MUL-1)*(d.paxLv||1):1)*(d.medx>0?MEDX_TAKE:1)*(a&&a!==d&&a.muddle>0?0.75:1);
   const hexBonus=d.hex>0?core*0.16*(rs&&rs.Dark?1-rs.Dark:1):0; // the hex's extra damage is always Dark, whatever the hit was
   dmg=Math.round(core*(rs&&rs[type]?1-rs[type]:1)+hexBonus);
   if(d.temp>0&&dmg>0){const ab=Math.min(d.temp,dmg);d.temp-=ab;dmg-=ab;if(d.temp<=0)s.fx.push({k:'spark',x:d.x,y:d.y-60,col:'#c8c8d0',life:10,t:0})}
@@ -743,8 +758,10 @@ function hitF(s,a,d,o){
     s.freeze=Math.max(s.freeze,3);return true;
   }
   if(o.melee&&a&&monkeyShield(s,a,d,dir))return true;
-  if(CH[d.c].walkArmor&&d.st==='walk'&&d.walkArmorCd<=0&&!o.unb&&o.dmg<=60){ // Tenebrund's shrug: small hits do nothing
-    d.walkArmorCd=180;say(s,d.x,d.y-110,'SHRUGS IT OFF','#cfd6e0',22);s.fx.push({k:'spark',x:d.x,y:d.y-60,col:'#cfd6e0',life:10,t:0});return true}
+  if(a&&a!==d&&CH[d.c].id==='dask'&&!(d.dactCd>0)&&d.st!=='grabbed'&&rngNext(s)<Math.min(DACT_MAX,Math.max(0,(o.dmg-DACT_MIN)/DACT_SPAN))){ // Dask Action: the big hit misses as he bolts
+    d.dactCd=DACT_CD;d.face=a.x>=d.x?1:-1;d.ground=d.ground;startMove(s,d,'dact');d.inv=22;s.fx.push({k:'omiss',x:d.x,y:d.y-50,life:18,t:0,col:'#b6f06a'});return true}
+  if(CH[d.c].walkArmor&&d.st==='walk'&&d.walkArmorCd<=0&&!o.unb&&o.dmg<=60&&o.dmg>0){ // Tenebrund's shrug: a small hit does no damage and he doesn't flinch, but its effects (latches, chems...) still apply
+    d.walkArmorCd=180;d.shrugT=s.frame;say(s,d.x,d.y-110,'SHRUGS IT OFF','#cfd6e0',22);s.fx.push({k:'spark',x:d.x,y:d.y-60,col:'#cfd6e0',life:10,t:0});return true}
   const wasDoing=d.st==='atk'?SRCKEY[d.mv]:null;
   const dealt=deal(s,a,d,o.dmg,o.src,o.type);
   if(wasDoing)d.punLog[wasDoing]=(d.punLog[wasDoing]||0)+dealt;
@@ -811,6 +828,7 @@ function tickMove(s,f){
         if(m.bounce){f.mf=m.wins[m.wins.length-1][1];f.md.bounce=10;f.vx=-f.face*8}} // on contact: stop charging and rebound
       const landed=(f.hitMask&(1<<wi))&&d.st!=='block'&&d.st!=='bstun'&&d.st!=='stun';
       if(landed&&c.id==='frica'&&['l','h','al','ah','s1'].includes(key)&&rngNext(s)<(d.hex>0?0.10:0.05)){f.temp=Math.round(f.maxHp*0.05);say(s,f.x,f.y-125,'LIFE DRINKER','#c8c8d0',22)}
+      if(landed&&c.id==='feng'&&['l','h','al','ah'].includes(key))fengSpend(s,f,d);
       if(m.onHit&&landed)m.onHit(s,f,d);
     });
   }
@@ -894,6 +912,7 @@ function wallHit(s,f,dir){
 }
 function separate(s){
   const[a,b]=s.f;if(a.st==='grabbed'||b.st==='grabbed'||a.st==='ko'||b.st==='ko')return;
+  if((a.st==='atk'&&a.md&&a.md.drag>=0)||(b.st==='atk'&&b.md&&b.md.drag>=0))return; // Pain Train carries them: don't shove the train back
   const ra=hurt(a),rb=hurt(b);
   if(!(ra[1]<rb[1]+rb[3]&&ra[1]+ra[3]>rb[1]))return;
   const need=(CH[a.c].w+CH[b.c].w)/2-Math.abs(a.x-b.x);
@@ -911,7 +930,7 @@ function tickProj(s){
     const owner=s.f[p.o],tgt=p.bad?owner:s.f[1-p.o];
     if(p.life>0&&!p.noHit&&p.miss!==tgt.i&&ov([p.x-p.w/2,p.y-p.h/2,p.w,p.h],hurt(tgt))){
       if(hitF(s,p.bad?null:owner,tgt,{dmg:p.dmg*CH[owner.c].pow*(p.falloff?Math.max(0.4,1-p.t*Math.abs(p.vx)/600):1),kb:p.kb,hs:p.hs,launch:p.launch,unb:p.unb,dir:p.vx>=0?1:-1,src:p.src,shieldMul:p.shieldMul||(p.kind==='bullet'?0.5:1)})){p.life=0;if(p.kind==='deer')s.fx.push({k:'cdpoof',x:p.x,y:p.y+34+(p.n%2)*16,dir:Math.sign(p.vx)||1,red:p.n===0,life:24,t:0});if(p.kind==='shiplaser')s.fx.push({k:'olhit',x:p.x,y:p.y,life:16,t:0});if(p.kind==='plasma')s.fx.push({k:'hrplasma',x:p.x,y:p.y,life:18,t:0});
-        if(p.onHit&&(tgt.st==='hit'||tgt.st==='down'||(p.pierce&&(tgt.st==='bstun'||tgt.st==='stun'))))p.onHit(s,owner,tgt,p)}
+        if(p.onHit&&(tgt.st==='hit'||tgt.st==='down'||tgt.shrugT===s.frame||(p.pierce&&(tgt.st==='bstun'||tgt.st==='stun'))))p.onHit(s,owner,tgt,p)}
       else if(tgt.missed===s.frame)p.miss=tgt.i;
     }
     if(p.kind==='nade'){for(const pl of PLATS)if(p.vy>0&&p.y>=pl.y&&p.y-p.vy<=pl.y&&p.x>pl.x&&p.x<pl.x+pl.w){p.life=0;p.y=pl.y}
@@ -975,7 +994,7 @@ function tickProj(s){
       z.face=tgt.x>=z.x?1:-1;
       const ddx=tx-z.x,ddy=ty-z.y,dd=Math.hypot(ddx,ddy)||1,sp=Math.min(5,dd);z.x+=ddx/dd*sp;z.y+=ddy/dd*sp;
       if(z.tk%50===0&&Math.abs(tgt.x-z.x)<90&&Math.abs((tgt.y-50)-z.y)<120&&tgt.st!=='ko'){z.swing=12;z.n++;
-        hitF(s,owner,tgt,{dmg:34*CH[owner.c].pow,kb:[5,-3],hs:18,dir:z.face,src:'s2'});}
+        if(hitF(s,owner,tgt,{dmg:34*CH[owner.c].pow,kb:[5,-3],hs:18,dir:z.face,src:'s2'})&&(tgt.st==='hit'||tgt.shrugT===s.frame))fengDecree(s,owner,tgt);}
       if(z.n>=3||owner.st==='ko')z.life=Math.min(z.life,12);
     }else if(z.k==='smoke'){ // Owen's smoke: slows and muddles anyone inside
       z.life--;z.tk++;
@@ -1044,17 +1063,18 @@ function step(s,inputs){
     for(let q=0;q<5;q++)if(f.dfx[q]>0)f.dfx[q]--;
     if(s.phase==='fight'&&CH[f.c].id==='chief'&&!f.brkUsed&&f.hp>0&&f.hp<f.maxHp*0.3&&['idle','walk','jump','block'].includes(f.st)&&f.ground){ // Union Break
       f.brkUsed=1;f.brk=UNION_BREAK;f.st='break';f.t=0;f.vx=0;f.mv=null;say(s,f.x,f.y-130,'UNION BREAK!','#f2b134',36);s.fx.push({k:'ring',x:f.x,y:f.y-40,life:20,t:0,col:'#f2b134',small:true})}
+    if(f.dactCd>0)f.dactCd--;
     if(s.phase==='fight'&&f.st!=='ko'&&CH[f.c].id==='calder'){ // Field Chemist
       if(f.craftT===undefined){f.craftFull=CRAFT_MIN+Math.floor(rngNext(s)*CRAFT_VAR);f.craftT=f.craftFull}
-      if(f.jet>0)f.jet--;if(f.medx>0)f.medx--;
-      if(--f.craftT<=0){const q=Math.floor(rngNext(s)*4);f.craftFull=CRAFT_MIN+Math.floor(rngNext(s)*CRAFT_VAR);f.craftT=f.craftFull;
+      if(f.jet>0)f.jet--;if(f.medx>0)f.medx--;if(f.psycho>0)f.psycho--;
+      if(--f.craftT<=0){const q=Math.floor(rngNext(s)*5);f.craftFull=CRAFT_MIN+Math.floor(rngNext(s)*CRAFT_VAR);f.craftT=f.craftFull;
         if(q===0){f.jet=JET_T;say(s,f.x,f.y-130,'JET!','#7fd0ff',26)}
         else if(q===1){f.medx=MEDX_T;say(s,f.x,f.y-130,'MED-X!','#ff9ab0',26)}
         else if(q===2){f.poison=0;f.pax=0;f.berserk=0;f.muddle=0;f.hex=0;f.slow=0;f.chemEnd=0;say(s,f.x,f.y-130,'ADDICTOL!','#c8f07a',26)}
+        else if(q===4){f.psycho=PSYCHO_T;say(s,f.x,f.y-130,'PSYCHO!','#ff5a3a',26)}
         else{const h=Math.min(f.maxHp-f.hp,Math.round(STIM_HEAL*f.maxHp));f.hp+=h;say(s,f.x,f.y-130,'STIMPAK +'+h,'#ff6a5a',26)}
-        s.fx.push({k:'ring',x:f.x,y:f.y-40,life:20,t:0,col:['#7fd0ff','#ff9ab0','#c8f07a','#ff6a5a'][q],small:true})}}
-    if(s.phase==='fight'&&f.st!=='ko'&&CH[f.c].id==='feng'){if(f.hwLock>0)f.hwLock--;else if(++f.hwT>=420){f.hwT=0;
-      if(rngNext(s)<0.30&&f.hp<f.maxHp-1){const h=Math.round(0.15*(f.maxHp-f.hp));f.hp+=h;f.hwLock=1200;say(s,f.x,f.y-130,'HEALING WORD +'+h,'#ffe9a0',24);s.fx.push({k:'ring',x:f.x,y:f.y-40,life:20,t:0,col:'#ffe9a0',small:true})}}}
+        s.fx.push({k:'ring',x:f.x,y:f.y-40,life:20,t:0,col:['#7fd0ff','#ff9ab0','#c8f07a','#ff6a5a','#ff5a3a'][q],small:true})}}
+    if(f.decreeT>0&&--f.decreeT===0&&f.decree>0){f.decree--;if(f.decree>0)f.decreeT=DECREE_T} // Divine Decree stacks fade one at a time, every 5s without a new one
     if(s.phase==='fight'&&f.st!=='ko'){f.calm++;
       if(f.calm>=(CH[f.c].regenWait||REGEN_WAIT)&&f.healLeft<=0&&f.hp<f.maxHp-1&&f.hp<=f.healLock){const amt=(CH[f.c].regenFrac||REGEN_FRAC)*(f.maxHp-f.hp);f.healLock=f.hp;f.healLeft=amt;f.healRate=amt/REGEN_TIME;say(s,f.x,f.y-125,'+'+Math.round(amt),'#7fe08a',24)}
       if(s.stats){const st=s.stats[f.i];if(f._hp!==undefined&&f.bars===f._bars&&f.hp>f._hp)st.healed=(st.healed||0)+(f.hp-f._hp);f._hp=f.hp;f._bars=f.bars} // any healing, whatever the source
@@ -1080,7 +1100,7 @@ function step(s,inputs){
       if(d.st!=='grabbed'){f.st='idle'}
       else if(f.t%14===7&&f.t<70){deal(s,f,d,15*CH[f.c].pow,'s1');s.fx.push({k:'tgrate',x:d.x,y:d.y-50,col:'#ffd34d',life:12,t:0});s.freeze=3;s.shake=Math.max(s.shake,3);
         if(d.st==='ko'){f.st='idle';d.vx=f.face*7;d.vy=-9;d.ground=false}}
-      else if(f.t>=74){d.st='idle';f.st='idle';hitF(s,f,d,{dmg:60*CH[f.c].pow,kb:[12,-10],hs:36,launch:true,unb:true,dir:f.face,src:'s1'});f.cd.s1=60}
+      else if(f.t>=74){d.st='idle';f.st='idle';hitF(s,f,d,{dmg:60*CH[f.c].pow,kb:[12,-10],hs:36,launch:true,unb:true,dir:f.face,src:'s1'});f.cd.s1=120}
     }
     if(f.st!=='atk'){f.armor=0}
     if(f.st==='block'||f.st==='bstun')f.shield=Math.max(0,f.shield-0.12);else if(f.st!=='stun')f.shield=Math.min(100,f.shield+0.3);
@@ -1134,7 +1154,7 @@ function navPlan(x,y,ground,tx,ty,hw=0){
 setStage(0);
 // Where each special is useful [min distance, max distance], so the CPU fires them when they can actually land
 const SPECIAL_RANGE={frica:{s1:[0,120],s2:[0,700]},madog:{s1:[60,420],s2:[0,140]},feng:{s1:[140,650],s2:[0,700]},
-  tenebrund:{s1:[0,85],s2:[0,160]},salty:{s1:[120,750],s2:[90,520]},dask:{s1:[0,130]},
+  tenebrund:{s1:[0,85],s2:[0,160]},salty:{s1:[120,750],s2:[90,520]},dask:{s1:[0,130],s2:[110,330]},
   calder:{s1:[220,850],s2:[90,600]},heavyrail:{s1:[120,700],s2:[60,250]},owen:{s1:[90,600],s2:[0,420]},tedd:{s1:[40,420],s2:[0,95]},bof:{s1:[60,230],s2:[0,125]},chief:{s1:[60,620]},soren:{s1:[30,170],s2:[160,720]}};
 // react: [fastest, slowest] frames between decisions (60 frames = 1s). Humans react in roughly 12-18 frames.
 const CPU_DIFF={easy:{react:[22,36],block:0.15,aggr:0.35,adapt:0.3},normal:{react:[15,26],block:0.45,aggr:0.55,adapt:0.7},hard:{react:[11,19],block:0.75,aggr:0.75,adapt:1}};
@@ -1232,7 +1252,6 @@ function cpuBrain(s,i,diff,mem){
     if(far.length&&rnd()<Math.min(0.9,chance*(zoner?D.aggr*1.2:1)))o=pick(far);
     else o=to|(rnd()<0.06||d.y<me.y-80&&rnd()<0.3?K.U:0);
   }
-  if(c.id==='dask'&&me.hp<me.maxHp*0.3&&threat&&me.cd.s2<=0&&rnd()<0.3)o=K.S2;
   if(c.id==='chief'&&me.cd.s2<=0&&me.ground&&me.hp<me.maxHp*0.8&&dist>200&&rnd()<0.35)o=K.S2; // plant the totem while there's room
   if(c.id==='owen'&&me.cd.s2<=0&&me.ground&&dist<260&&rnd()<0.5)o=K.S2; // pop smoke when they get close (it does no damage itself, so learning alone undervalues it)
   if(c.id==='owen'&&me.ground&&!threat&&s.zones.some(z=>z.k==='smoke'&&z.o===i&&Math.abs(z.x-me.x)<140)&&Math.abs(d.x-me.x)>60&&!s.zones.some(z=>z.k==='smoke'&&z.o===i&&Math.abs(z.x-d.x)<115)&&me.cd.s1<=0&&rnd()<0.4)o=K.S1; // shoot from cover
@@ -1662,7 +1681,7 @@ const ANIMS={
   feng:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'throwb',s2:'summon',su:'cast'},
   tenebrund:{l:'jab',h:'uppercut',al:'jab',ah:'slam',s1:'grab',s2:'flex',su:'flop'},
   salty:{l:'jab',h:'uppercut',al:'jab',ah:'slam',s1:'shoot',s2:'strum',su:'shoot'},
-  dask:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'rush',s2:'dashback',su:'rush'},
+  dask:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'rush',s2:'rush',dact:'dashback',su:'rush'},
   calder:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'shoot',s2:'shoot',su:'shoot'},
   heavyrail:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'shoot',s2:'shoot',su:'flop'},
   owen:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'shoot',s2:'throwb',su:'shoot'},
@@ -2127,7 +2146,7 @@ function pixelSprite(f,key){
 /* ---- hand-made sprite sheets (8 columns x 14 rows of 256x272 cells, feet at 128,226, facing right).
    Rows: idle, walk, jump, light, heavy, air light, air heavy, special 1, special 2, super, hit, block, stunned, knocked down. ---- */
 const SHEETS={frica:{src:'frica_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},madog:{src:'madog_sheet.png',frames:[8,8,2,7,8,4,5,8,6,8,2,2,4,1]},feng:{src:'feng_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},dask:{src:'dask_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tenebrund:{src:'tenebrund_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},salty:{src:'salty_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8]},calder:{src:'calder_sheet.png',frames:[7,7,2,6,7,4,5,7,6,7,2,2,4,1]},heavyrail:{src:'heavyrail_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},owen:{src:'owen_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tedd:{src:'tedd_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},bof:{src:'bof_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},chief:{src:'chief_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},soren:{src:'soren_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]}};
-const SHEET_ROW={l:3,h:4,al:5,ah:6,s1:7,s2:8,su:9};
+const SHEET_ROW={l:3,h:4,al:5,ah:6,s1:7,s2:8,su:9,dact:8};
 const FXS={demon:{src:'demon_sheet.png'},static:{src:'static_sheet.png'},madog:{src:'madog_fx.png'},fengsw:{src:'feng_sw.png'},fengpamph:{src:'feng_pamph.png'},fengpillar:{src:'feng_pillar.png'},vortex:{src:'erebus_vortex.png'},gfboulder:{src:'gf_boulder.png'},gfgiant:{src:'gf_giant.png'},unda:{src:'erebus_unda.png'},dask:{src:'dask_fx.png'},ten:{src:'tenebrund_fx.png'},sbul:{src:'salty_bullets.png'},swave:{src:'salty_wave.png'},shipdoor:{src:'ship_door.png'},bloatfly:{src:'tahoe_bloatfly.png'},cproj:{src:'calder_proj.png'},cchem:{src:'calder_chems.png'},hrfx:{src:'hr_fx.png'},hrp:{src:'hr_plasma.png'},oproj:{src:'owen_proj.png'},olaser:{src:'owen_laser.png'},osmoke:{src:'owen_smoke.png'},tfx:{src:'tedd_fx.png'},bfx:{src:'bof_fx.png'},cdeer:{src:'chief_deer.png'},celf:{src:'chief_elves.png'},cfx:{src:'chief_fx.png'},arrows:{src:'vogler_arrows.png'},sdragon:{src:'soren_dragon.png'},sfx:{src:'soren_fx.png'}};
 const SBC=84,SWC=230; // salty bullets (bullet 4, muzzle 4, impact 6) and Mush It wave (loop 8, fade 8)
 const TFC=204; // tenebrund_fx cell; rows: stink puff 6, loop 8, fade 6, grater sparks 6, belly flop 8, flies 6
@@ -2158,6 +2177,7 @@ function sheetFrame(f,sh){
     if(f.st==='grind')return[9,f.t>=70?(f.t<78?6:7):3+Math.floor(f.t/8)%3]; // bear hug: squeeze loop, then the throw
     if(f.st==='atk'&&f.mv==='su')return[9,Math.min(2,Math.floor(f.mf/8))];
     if(f.st==='atk'&&f.mv==='s1')return[7,f.mf<8?0:f.mf<TRAIN_END?1+Math.floor(f.t/3)%5:Math.min(7,6+Math.floor((f.mf-TRAIN_END)/10))]}
+  if(c.id==='dask'&&f.st==='atk'&&f.mv==='s2')return[1,Math.floor(t/2)%sh.frames[1]]; // Barbarian Charge: his run, sped up
   if(f.st==='grind')return[7,f.t>=70?7:3+Math.floor(f.t/6)%3];
   switch(f.st){
     case'atk':{const m=c.moves[f.mv];row=SHEET_ROW[f.mv]??4;const n=sh.frames[row];col=Math.min(n-1,Math.floor(f.mf/m.len*n));break}
@@ -2227,7 +2247,7 @@ function drawFighter(f,tagCol,tag){
   g.font='600 13px Rubik,sans-serif';g.textAlign='center';g.fillStyle=tagCol;g.fillText(tag,f.x,f.y-c.h-36);
   if(f.reckless>0&&f.st!=='ko'&&!(f.muddle>0)){g.font='16px Bangers,Impact,sans-serif';g.fillStyle='#ff6a5a';g.strokeStyle='#000';g.lineWidth=4;g.strokeText('RECKLESS',f.x,f.y-c.h-52);g.fillText('RECKLESS',f.x,f.y-c.h-52)}
   drawHRFx(f,c);
-  {const tags=[];if(f.brk>0)tags.push(['ON BREAK','#f2b134']);if(f.steady>0)tags.push(['STANDING FIRM','#f2b134']);if(f.dragon>0)tags.push(['SILVER DRAGON','#dfe9ff']);if(f.guided>0)tags.push(['GUIDED','#fff2a8']);if(f.jet>0)tags.push(['JET','#7fd0ff']);if(f.medx>0)tags.push(['MED-X','#ff9ab0']);if(f.berserk>0)tags.push(['BERSERK','#ff5a3a']);if(f.pax>0)tags.push(['PAX','#ffd0e8']);if(f.poison>0)tags.push(['POISONED','#9bd35a']);if(f.burn>0)tags.push(['BURNING','#ff8a1a']);
+  {const tags=[];if(f.brk>0)tags.push(['ON BREAK','#f2b134']);if(f.steady>0)tags.push(['STANDING FIRM','#f2b134']);if(f.dragon>0)tags.push(['SILVER DRAGON','#dfe9ff']);if(f.guided>0)tags.push(['GUIDED','#fff2a8']);if(f.decree>0)tags.push(['DECREE x'+f.decree,'#ffd34d']);if(f.jet>0)tags.push(['JET','#7fd0ff']);if(f.psycho>0)tags.push(['PSYCHO','#ff5a3a']);if(f.medx>0)tags.push(['MED-X','#ff9ab0']);if(f.berserk>0)tags.push(['BERSERK','#ff5a3a']);if(f.pax>0)tags.push(['PAX','#ffd0e8']);if(f.poison>0)tags.push(['POISONED','#9bd35a']);if(f.burn>0)tags.push(['BURNING','#ff8a1a']);
     let ty=f.y-c.h-(f.reckless>0||f.muddle>0?70:52);
     if(f.chemEnd>S.frame&&f.st!=='ko'&&fxOn('cchem')){const d=40,iy=ty-6;fxCell(fxOn('cchem'),(Math.floor(S.frame/6)%6)*160,f.chemQ*160,160,160,f.x-d/2,iy-d/2-8,d,d);ty-=34}g.font='16px Bangers,Impact,sans-serif';g.textAlign='center';g.lineWidth=4;g.strokeStyle='#000';
     for(const[tx,col]of tags){if(f.st==='ko')break;g.fillStyle=col;g.strokeText(tx,f.x,ty);g.fillText(tx,f.x,ty);ty-=17}
@@ -2431,7 +2451,7 @@ const ICONS={
   bof:{s1:['bfx',0,2],s2:['bfx',1,1]},
   chief:{s1:['cdeer',1,0],s2:['cfx',1,0],p:['cfx',3,3]}};
 const FX_CELL={demon:192,static:274,madog:180,fengsw:144,fengpamph:56,fengpillar:348,dask:284,ten:204,sbul:84,swave:230,cproj:200,cchem:160,hrfx:240,hrp:200,oproj:200,olaser:300,osmoke:180,tfx:200,bfx:200,cdeer:240,celf:240,cfx:210};
-const PASSIVE_CD={calder:f=>[f.craftT||0,f.craftFull||1],tenebrund:f=>[f.walkArmorCd,180],salty:f=>[f.bubLock,420],feng:f=>[f.hwLock,1200]}; // [remaining, full] in frames
+const PASSIVE_CD={calder:f=>[f.craftT||0,f.craftFull||1],tenebrund:f=>[f.walkArmorCd,180],salty:f=>[f.bubLock,420]}; // [remaining, full] in frames
 const cdMax=new WeakMap(); // UI-only: the longest cooldown seen since it was last ready, for the progress ring
 function iconSrc(spec){
   if(!spec||!pixelArt)return null;const[k,r,c]=spec;
@@ -3013,7 +3033,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){netSend({t:'select'});netGoSelect(
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.9'; // shown on the title screen; online players must match
+const VERSION='0.2.10'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 (function checkForUpdate(){ // phones cache the page: if the copy on the server is newer, say so
