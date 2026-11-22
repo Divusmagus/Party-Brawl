@@ -1,0 +1,17 @@
+PARTY BRAWL - PATCH NOTES v0.2.9
+Released 2026-11-21
+
+SALTY BALLS: ALL-NEW SPRITES
+- Salty has a brand-new, much more detailed sprite set (made with Autosprite). Bubbles now rides on his
+  back with a flintlock, and he finally stops looking like a zombie.
+- New animations for idle, run, jump, light (a jab), heavy (overhead accordion slam with a swoosh),
+  air light (kick), air heavy (accordion smash), Bubbles' Pistols (Bubbles climbs up, aims and fires),
+  Mush It (belting it out on the accordion), hit, block, stunned and knocked down.
+- New Mush It sound wave projectile art.
+- The super currently reuses the pistol frames until it gets its own sheet.
+
+MOVEMENT ANIMATIONS
+- Fighters can now have two extra movement animations:
+  - Backing up: used when walking away from the way they're facing.
+  - Slow walk: used while slowed, so a sprinting run doesn't look like a treadmill.
+- Salty is the first with both. Everyone else keeps using their normal walk.

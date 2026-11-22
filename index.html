@@ -2126,7 +2126,7 @@ function pixelSprite(f,key){
 }
 /* ---- hand-made sprite sheets (8 columns x 14 rows of 256x272 cells, feet at 128,226, facing right).
    Rows: idle, walk, jump, light, heavy, air light, air heavy, special 1, special 2, super, hit, block, stunned, knocked down. ---- */
-const SHEETS={frica:{src:'frica_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},madog:{src:'madog_sheet.png',frames:[8,8,2,7,8,4,5,8,6,8,2,2,4,1]},feng:{src:'feng_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},dask:{src:'dask_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tenebrund:{src:'tenebrund_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},salty:{src:'salty_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},calder:{src:'calder_sheet.png',frames:[7,7,2,6,7,4,5,7,6,7,2,2,4,1]},heavyrail:{src:'heavyrail_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},owen:{src:'owen_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tedd:{src:'tedd_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},bof:{src:'bof_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},chief:{src:'chief_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},soren:{src:'soren_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]}};
+const SHEETS={frica:{src:'frica_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},madog:{src:'madog_sheet.png',frames:[8,8,2,7,8,4,5,8,6,8,2,2,4,1]},feng:{src:'feng_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},dask:{src:'dask_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tenebrund:{src:'tenebrund_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},salty:{src:'salty_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8]},calder:{src:'calder_sheet.png',frames:[7,7,2,6,7,4,5,7,6,7,2,2,4,1]},heavyrail:{src:'heavyrail_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},owen:{src:'owen_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tedd:{src:'tedd_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},bof:{src:'bof_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},chief:{src:'chief_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},soren:{src:'soren_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]}};
 const SHEET_ROW={l:3,h:4,al:5,ah:6,s1:7,s2:8,su:9};
 const FXS={demon:{src:'demon_sheet.png'},static:{src:'static_sheet.png'},madog:{src:'madog_fx.png'},fengsw:{src:'feng_sw.png'},fengpamph:{src:'feng_pamph.png'},fengpillar:{src:'feng_pillar.png'},vortex:{src:'erebus_vortex.png'},gfboulder:{src:'gf_boulder.png'},gfgiant:{src:'gf_giant.png'},unda:{src:'erebus_unda.png'},dask:{src:'dask_fx.png'},ten:{src:'tenebrund_fx.png'},sbul:{src:'salty_bullets.png'},swave:{src:'salty_wave.png'},shipdoor:{src:'ship_door.png'},bloatfly:{src:'tahoe_bloatfly.png'},cproj:{src:'calder_proj.png'},cchem:{src:'calder_chems.png'},hrfx:{src:'hr_fx.png'},hrp:{src:'hr_plasma.png'},oproj:{src:'owen_proj.png'},olaser:{src:'owen_laser.png'},osmoke:{src:'owen_smoke.png'},tfx:{src:'tedd_fx.png'},bfx:{src:'bof_fx.png'},cdeer:{src:'chief_deer.png'},celf:{src:'chief_elves.png'},cfx:{src:'chief_fx.png'},arrows:{src:'vogler_arrows.png'},sdragon:{src:'soren_dragon.png'},sfx:{src:'soren_fx.png'}};
 const SBC=84,SWC=230; // salty bullets (bullet 4, muzzle 4, impact 6) and Mush It wave (loop 8, fade 8)
@@ -2161,7 +2161,8 @@ function sheetFrame(f,sh){
   if(f.st==='grind')return[7,f.t>=70?7:3+Math.floor(f.t/6)%3];
   switch(f.st){
     case'atk':{const m=c.moves[f.mv];row=SHEET_ROW[f.mv]??4;const n=sh.frames[row];col=Math.min(n-1,Math.floor(f.mf/m.len*n));break}
-    case'walk':row=1;col=Math.floor(t/4)%sh.frames[1];break;
+    case'walk':{const back=f.vx*f.face<-0.1&&sh.frames[15],slow=f.slow>0&&sh.frames[14]; // optional rows: 15 = backing up (played in reverse), 14 = slow walk when slowed; else the run
+      if(back){const n=sh.frames[15];row=15;col=n-1-Math.floor(t/4)%n}else if(slow){row=14;col=Math.floor(t/5)%sh.frames[14]}else{row=1;col=Math.floor(t/4)%sh.frames[1]}break}
     case'jump':row=2;col=f.vy<0?0:1;break;
     case'hit':case'grabbed':row=10;col=Math.min(1,Math.floor(t/5));break;
     case'block':case'bstun':row=11;col=f.st==='bstun'?1:0;break;
@@ -3012,7 +3013,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){netSend({t:'select'});netGoSelect(
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.8'; // shown on the title screen; online players must match
+const VERSION='0.2.9'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 (function checkForUpdate(){ // phones cache the page: if the copy on the server is newer, say so
