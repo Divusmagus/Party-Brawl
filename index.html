@@ -410,7 +410,8 @@ const CH=[
     start:(s,a)=>say(s,a.x,a.y-130,'DINNER TIME!','#ffb04a',40),
     tick:(s,a,f,m)=>{
       if(f===14){const d=opp(s,a);a.vy=-17;a.ground=false;a.vx=Math.max(-11,Math.min(11,(d.x-a.x)/38));a.md.air=1}
-      else if(a.md.air===1&&f>18&&a.ground){a.md.air=2;s.shake=16;s.fx.push({k:'tflop',x:a.x,y:a.y,life:32,t:0,col:'#ffb04a'});
+      if(a.md.air===1&&!a.ground)slamPass(s,a,190);
+      if(a.md.air===1&&f>18&&a.ground){a.md.air=2;s.shake=16;s.fx.push({k:'tflop',x:a.x,y:a.y,life:32,t:0,col:'#ffb04a'});
         const d=opp(s,a);if(Math.abs(d.x-a.x)<190&&d.y>a.y-120)hitF(s,a,d,{dmg:250,kb:[11,-13],hs:44,launch:true,unb:true,dir:d.x>=a.x?1:-1,src:'su'});
         a.mf=m.len-28}}}),
  })},
@@ -473,7 +474,8 @@ const CH=[
     start:(s,a)=>say(s,a.x,a.y-130,'AD VICTORIAM!','#f2b134',40),
     tick:(s,a,f,m)=>{
       if(f===14){const d=opp(s,a);a.vy=-19;a.ground=false;a.vx=Math.max(-12,Math.min(12,(d.x-a.x)/40));a.md.air=1}
-      else if(a.md.air===1&&f>18&&a.ground){a.md.air=2;s.shake=18;s.fx.push({k:'hrslam',x:a.x,y:a.y,life:32,t:0,col:'#f2b134'});
+      if(a.md.air===1&&!a.ground)slamPass(s,a,180);
+      if(a.md.air===1&&f>18&&a.ground){a.md.air=2;s.shake=18;s.fx.push({k:'hrslam',x:a.x,y:a.y,life:32,t:0,col:'#f2b134'});
         const d=opp(s,a);if(Math.abs(d.x-a.x)<180&&d.y>a.y-130)hitF(s,a,d,{dmg:250,kb:[11,-13],hs:44,launch:true,unb:true,dir:d.x>=a.x?1:-1,src:'su'});
         a.mf=m.len-28}}}),
  })},
@@ -689,6 +691,9 @@ const BARS=2,REGEN_WAIT=180,REGEN_FRAC=0.10,REGEN_TIME=40; // two health bars; r
 const ARMOR_CAP=80; // damage armour can absorb per move use before it breaks
 const TEN_DASH_F=16,TEN_DASH_V=8,TEN_DASH_CD=30; // dash: ~128 units (was 84), then 8 frames recovery
 const MONKEY_CD=420,MONKEY_P=0.40;
+function slamPass(s,a,R){ // Belly Flop / Power Armor Drop in the air: fall through platforms unless the target is standing on one right below, in range
+  const d=opp(s,a),onPlatNear=d.ground&&d.st!=='ko'&&d.y<floorY(d.x)-4&&Math.abs(d.x-a.x)<R&&a.y<=d.y+4;
+  if(!onPlatNear)a.drop=Math.max(a.drop,2)}
 const DECREE_MAX=5,DECREE_PCT=0.01,DECREE_T=300,PAMPH_HEAL=0.25,PAMPH_DECAY=0.6,PAMPH_MIN=0.05,PAMPH_RESET=240;
 function fengDecree(s,a,d){if(!a||CH[a.c].id!=='feng'||d.st==='ko')return;d.decree=Math.min(DECREE_MAX,(d.decree||0)+1);d.decreeT=DECREE_T} // a stack of Divine Decree on the target
 function fengPamphHeal(s,a,p){if(!a||a.st==='ko')return; // 25% of the hit as healing, less for each quick repeat
@@ -3033,7 +3038,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){netSend({t:'select'});netGoSelect(
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.10'; // shown on the title screen; online players must match
+const VERSION='0.2.11'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 (function checkForUpdate(){ // phones cache the page: if the copy on the server is newer, say so

@@ -1,0 +1,9 @@
+PARTY BRAWL - PATCH NOTES v0.2.11
+Released 2026-11-21
+
+SUPERS
+- Tenebrund's Belly Flop and Heavy Rail's Power Armor Drop no longer land on whatever platform happens to be
+  under them. On the way down they fall through platforms, unless the opponent is standing on a platform right
+  below and within range (190 for Belly Flop, 180 for Power Armor Drop); then they land on that platform and
+  slam them there. Otherwise they come down on the ground, so the hit looks and plays like a real slam,
+  mostly on platform-heavy stages like Vogler and Tahoe. Solid platforms still stop them as before.
