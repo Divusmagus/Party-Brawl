@@ -1,0 +1,23 @@
+PARTY BRAWL - PATCH NOTES v0.2.12
+Released 2026-11-21
+
+FREE FACING
+- Fighters no longer turn to face the opponent automatically. You face the way you last pressed Left or Right,
+  on the ground or in the air, and keep that facing when you let go.
+- Pressing a direction and an attack on the same frame turns first, then attacks.
+- You can't turn during an attack, while being hit or while stunned.
+- Blocking only covers the side you're facing. Hits from behind get through. Hold Block and tap a direction
+  to turn your shield around without moving.
+- Jumping over someone now leaves you facing away from them until you turn: cross-ups are real.
+- The CPU turns to face you whenever it attacks, blocks or uses a special, so it plays about the same as before.
+
+SOREN
+- Dragon Breath (Frost Breath in dragon form) is now a wide cone. Each puff is a fan of four breath clouds from
+  his mouth: one angled up, one straight, and two angled down that reach the ground by the end of the range.
+  It now hits anything in front of him, including short fighters standing right up against him (they used to
+  slip under it). Each puff still hits only once, so damage and range are unchanged.
+
+ART
+- Soren: new silver dragon sprite sheet with more animation frames (hover, gallop, claw, wing sweep, breath,
+  cast, roar) and an updated character sheet. His air heavy no longer draws the generic swoosh trail; the
+  sprite has its own light burst.

@@ -312,6 +312,7 @@ const STEADY_T=180,STEADY_MODE='A'; // Big Chief after a union break: 3s of no k
 const CHIEF_NORM=1.0,HAWK_MUL=1.2,HAWK_KB=1.3,BEAR_SHIELD=0.10; // Big Chief: normals at 80%; the hawk totem gives +20% (back to 96%); the bear's shield is 10% of max HP
 const TOTEMS=[{id:'unicorn',n:'UNICORN TOTEM!',col:'#9bf0a0',hue:0},{id:'bear',n:'BEAR TOTEM!',col:'#d8a060',hue:-95},{id:'hawk',n:'HAWK TOTEM!',col:'#ffd34d',hue:-70}];
 const GUIDE_T=240,GUIDE_BONUS=1.2; // Guiding Bolt: the mark lasts 4s; his next direct hit on them does +20%
+const DRAGON_CONE=[-2,0,1.4,2.6]; // dragon breath fan: vertical speed of each puff (from his mouth: up a little, straight, down, down to the ground)
 const SOREN_BREATH=13,DRAGON_T=480,DRAGON_TAKE=0.7,DRAGON_HIT=1.32,DRAGON_SPD=1.15,GLIDE_VY=1.8; // Soren: breath damage per puff, dragon form (6s): damage taken / dealt, speed; max fall speed while gliding
 const UNION_BREAK=150,PAX_MUL=1.2,SMOKE_LIFE=240,TOTEM_HEAL=5,TOTEM_DMG=12,DEER_DMG=34,DEER_CD=360,TRAIN_END=52,SMOKE_MISS=[0.5,0.25,0],SMOKE_CRIT=0.3,ACR_DMG=18,TRAIN_V=8.5,TRAIN_BASE=6,TRAIN_PER=0.95,TRAIN_WALL=30,STRIKE_HITS=5,STRIKE_DMG=40,HUG_SQUEEZE=22,HUG_THROW=55,DART_CD=360;
 // Calder's syringer: each dart uses one chem that's ready; that chem then needs DART_CD frames to come back
@@ -558,8 +559,9 @@ const CH=[
  moves:Object.assign(normals({reach:8,light:1.18}),{
   s1:mv({n:'Frost Breath',d:'Breathes a short cone of freezing breath: several quick hits that chill (slow) whoever is caught in it',su:12,ac:1,re:16,len:46,dmg:0,box:[0,0,0,0],cd:150,
     start:(s,a)=>{if(a.dragon>0)say(s,a.x,a.y-120,'DRAGON BREATH!','#bfe6ff',26)},
-    tick:(s,a,f)=>{if(f>=12&&f<=40&&(f-12)%4===0){const big=a.dragon>0;proj(s,a,{kind:'frost',big,x:a.x+a.face*(big?70:30),y:a.y-(big?84:70)+((f/4)%3-1)*8,vx:a.face*(big?10:8.5),w:big?40:28,h:big?36:24,life:big?30:22,dmg:SOREN_BREATH,kb:[1.2,0],hs:6,
-      onHit:(s,a,d)=>{d.slow=Math.max(d.slow,45)}})}}}),
+    tick:(s,a,f)=>{if(f>=12&&f<=40&&(f-12)%4===0){const big=a.dragon>0,chill=(s,a,d)=>{d.slow=Math.max(d.slow,45)};
+      if(big){for(const vy of DRAGON_CONE)proj(s,a,{kind:'frost',big,grp:s.frame*2+a.i+1,x:a.x+a.face*24,y:a.y-84+((f/4)%2)*6,vx:a.face*9.5,vy,w:46,h:42,life:37,dmg:SOREN_BREATH,kb:[1.2,0],hs:6,onHit:chill});return} // dragon: a wide cone from his mouth down to the ground (each puff of the fan is one hit: only the first to land counts)
+      proj(s,a,{kind:'frost',big,x:a.x+a.face*30,y:a.y-70+((f/4)%3-1)*8,vx:a.face*8.5,w:28,h:24,life:22,dmg:SOREN_BREATH,kb:[1.2,0],hs:6,onHit:chill})}}}),
   s2:mv({n:'Guiding Bolt',d:'His signature spell: a bolt of radiant light fired straight ahead. A hit leaves the target glowing for 4s, and his next hit on them does 20% more damage',su:14,ac:1,re:16,len:34,dmg:0,box:[0,0,0,0],cd:58,
     tick:(s,a,f)=>{if(f===14)proj(s,a,{kind:'moon',y:a.y-62,vx:a.face*10,w:26,h:18,life:110,dmg:76,kb:[5,-3],hs:16,onHit:(s,a,d)=>{d.guided=GUIDE_T;s.fx.push({k:'sfx',row:3,x:d.x,y:d.y-60,life:18,t:0,d:96})}})}}),
   su:mv({n:'Silver Dragon',d:'Roars (knocking back anyone close) and takes the form of a silver dragon for 8s: takes 30% less damage, hits 32% harder, moves faster, and his breath gets bigger',su:14,ac:1,re:18,len:36,dmg:0,box:[0,0,0,0],inv:[0,22],
@@ -848,15 +850,15 @@ function control(s,f,inp){
   const pr=inp&~f.prev;f.prev=inp;
   if(s.phase!=='fight')return;
   if(!['idle','walk','jump','block'].includes(f.st))return;
-  const c=CH[f.c],d=opp(s,f);
-  if(f.ground&&f.st!=='jump')f.face=d.x>=f.x?1:-1;
+  const c=CH[f.c];
+  const dir=((inp&K.R)?1:0)-((inp&K.L)?1:0);
+  if(dir)f.face=dir; // free facing: you face the way you last pressed (ground or air, and while blocking), so a direction + attack on the same frame turns first. Locked during attacks, hits and stuns
   const wantSuper=(pr&K.SU)||((inp&K.S1)&&(inp&K.S2)&&(pr&(K.S1|K.S2)));
   if(wantSuper&&f.meter>=METER)return startMove(s,f,'su');
   if((pr&K.S1)&&!(inp&K.S2)&&f.cd.s1<=0)return startMove(s,f,'s1');
   if((pr&K.S2)&&!(inp&K.S1)&&f.cd.s2<=0)return startMove(s,f,'s2');
   if(pr&K.HP)return startMove(s,f,f.ground?'h':'ah');
   if(pr&K.LP)return startMove(s,f,f.ground?'l':'al');
-  const dir=((inp&K.R)?1:0)-((inp&K.L)?1:0);
   const wind=STAGE.hazard==='wind'&&s.hz?s.hz.w:0;
   const spd=c.spd*(f.slow>0?(f.slowLv>1?0.35:0.55):1)*(f.haste>0?1.35:1)*(f.muddle>0?0.7:1)*(f.berserk>0?1.15:1)*(f.dragon>0?DRAGON_SPD:1)*(f.jet>0?JET_SPD:1)*(dir?1+WIND.k*wind*dir:1); // with the wind: faster; into it: slower
   if(f.ground){
@@ -934,7 +936,7 @@ function tickProj(s){
     if(p.betrayAt&&p.t===p.betrayAt){p.vx=-p.vx*1.2;p.bad=1;say(s,p.x,p.y-40,'...UH OH','#ff6a5a',24)}
     const owner=s.f[p.o],tgt=p.bad?owner:s.f[1-p.o];
     if(p.life>0&&!p.noHit&&p.miss!==tgt.i&&ov([p.x-p.w/2,p.y-p.h/2,p.w,p.h],hurt(tgt))){
-      if(hitF(s,p.bad?null:owner,tgt,{dmg:p.dmg*CH[owner.c].pow*(p.falloff?Math.max(0.4,1-p.t*Math.abs(p.vx)/600):1),kb:p.kb,hs:p.hs,launch:p.launch,unb:p.unb,dir:p.vx>=0?1:-1,src:p.src,shieldMul:p.shieldMul||(p.kind==='bullet'?0.5:1)})){p.life=0;if(p.kind==='deer')s.fx.push({k:'cdpoof',x:p.x,y:p.y+34+(p.n%2)*16,dir:Math.sign(p.vx)||1,red:p.n===0,life:24,t:0});if(p.kind==='shiplaser')s.fx.push({k:'olhit',x:p.x,y:p.y,life:16,t:0});if(p.kind==='plasma')s.fx.push({k:'hrplasma',x:p.x,y:p.y,life:18,t:0});
+      if(hitF(s,p.bad?null:owner,tgt,{dmg:p.dmg*CH[owner.c].pow*(p.falloff?Math.max(0.4,1-p.t*Math.abs(p.vx)/600):1),kb:p.kb,hs:p.hs,launch:p.launch,unb:p.unb,dir:p.vx>=0?1:-1,src:p.src,shieldMul:p.shieldMul||(p.kind==='bullet'?0.5:1)})){p.life=0;if(p.grp)for(const q of s.proj)if(q.grp===p.grp)q.noHit=1;if(p.kind==='deer')s.fx.push({k:'cdpoof',x:p.x,y:p.y+34+(p.n%2)*16,dir:Math.sign(p.vx)||1,red:p.n===0,life:24,t:0});if(p.kind==='shiplaser')s.fx.push({k:'olhit',x:p.x,y:p.y,life:16,t:0});if(p.kind==='plasma')s.fx.push({k:'hrplasma',x:p.x,y:p.y,life:18,t:0});
         if(p.onHit&&(tgt.st==='hit'||tgt.st==='down'||tgt.shrugT===s.frame||(p.pierce&&(tgt.st==='bstun'||tgt.st==='stun'))))p.onHit(s,owner,tgt,p)}
       else if(tgt.missed===s.frame)p.miss=tgt.i;
     }
@@ -1163,7 +1165,12 @@ const SPECIAL_RANGE={frica:{s1:[0,120],s2:[0,700]},madog:{s1:[60,420],s2:[0,140]
   calder:{s1:[220,850],s2:[90,600]},heavyrail:{s1:[120,700],s2:[60,250]},owen:{s1:[90,600],s2:[0,420]},tedd:{s1:[40,420],s2:[0,95]},bof:{s1:[60,230],s2:[0,125]},chief:{s1:[60,620]},soren:{s1:[30,170],s2:[160,720]}};
 // react: [fastest, slowest] frames between decisions (60 frames = 1s). Humans react in roughly 12-18 frames.
 const CPU_DIFF={easy:{react:[22,36],block:0.15,aggr:0.35,adapt:0.3},normal:{react:[15,26],block:0.45,aggr:0.55,adapt:0.7},hard:{react:[11,19],block:0.75,aggr:0.75,adapt:1}};
-function cpuInput(s,i,diff,mem){ // stage awareness wrapped around the fighting brain: get out of the vortex, don't wander in
+function cpuInput(s,i,diff,mem){ // free facing: when the CPU attacks, blocks or uses a special it turns to face its opponent first (the brain was written for auto-facing)
+  const o=cpuStage(s,i,diff,mem),me=s.f[i],d=s.f[1-i];
+  if(!(o&(K.LP|K.HP|K.S1|K.S2|K.SU|K.B))||(o&K.U)||me.st==='ko'||d.st==='ko')return o;
+  if(Math.abs(d.x-me.x)<4)return o;
+  return(o&~(K.L|K.R))|(d.x>me.x?K.R:K.L)}
+function cpuStage(s,i,diff,mem){ // stage awareness wrapped around the fighting brain: get out of the vortex, don't wander in
   const o=cpuBrain(s,i,diff,mem),P=STAGE.pit,me=s.f[i],hw=CH[me.c].w/2,free=['idle','walk','block'].includes(me.st);
   if(STAGE.hazard==='boulder'&&s.hz&&s.hz.warn>0&&me.st!=='ko'){const h=s.hz,react={easy:45,normal:24,hard:12}[diff]||24; // see the shadow, get out from under it
     if(BOULDER.warn-h.warn>=react){const dx=me.x-h.x,zone=BOULDER.w/2+hw+14;
@@ -2150,7 +2157,7 @@ function pixelSprite(f,key){
 }
 /* ---- hand-made sprite sheets (8 columns x 14 rows of 256x272 cells, feet at 128,226, facing right).
    Rows: idle, walk, jump, light, heavy, air light, air heavy, special 1, special 2, super, hit, block, stunned, knocked down. ---- */
-const SHEETS={frica:{src:'frica_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},madog:{src:'madog_sheet.png',frames:[8,8,2,7,8,4,5,8,6,8,2,2,4,1]},feng:{src:'feng_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},dask:{src:'dask_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tenebrund:{src:'tenebrund_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},salty:{src:'salty_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8]},calder:{src:'calder_sheet.png',frames:[7,7,2,6,7,4,5,7,6,7,2,2,4,1]},heavyrail:{src:'heavyrail_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},owen:{src:'owen_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tedd:{src:'tedd_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},bof:{src:'bof_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},chief:{src:'chief_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},soren:{src:'soren_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]}};
+const SHEETS={frica:{src:'frica_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},madog:{src:'madog_sheet.png',frames:[8,8,2,7,8,4,5,8,6,8,2,2,4,1]},feng:{src:'feng_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},dask:{src:'dask_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tenebrund:{src:'tenebrund_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},salty:{src:'salty_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8]},calder:{src:'calder_sheet.png',frames:[7,7,2,6,7,4,5,7,6,7,2,2,4,1]},heavyrail:{src:'heavyrail_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},owen:{src:'owen_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tedd:{src:'tedd_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},bof:{src:'bof_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},chief:{src:'chief_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},soren:{src:'soren_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8]}};
 const SHEET_ROW={l:3,h:4,al:5,ah:6,s1:7,s2:8,su:9,dact:8};
 const FXS={demon:{src:'demon_sheet.png'},static:{src:'static_sheet.png'},madog:{src:'madog_fx.png'},fengsw:{src:'feng_sw.png'},fengpamph:{src:'feng_pamph.png'},fengpillar:{src:'feng_pillar.png'},vortex:{src:'erebus_vortex.png'},gfboulder:{src:'gf_boulder.png'},gfgiant:{src:'gf_giant.png'},unda:{src:'erebus_unda.png'},dask:{src:'dask_fx.png'},ten:{src:'tenebrund_fx.png'},sbul:{src:'salty_bullets.png'},swave:{src:'salty_wave.png'},shipdoor:{src:'ship_door.png'},bloatfly:{src:'tahoe_bloatfly.png'},cproj:{src:'calder_proj.png'},cchem:{src:'calder_chems.png'},hrfx:{src:'hr_fx.png'},hrp:{src:'hr_plasma.png'},oproj:{src:'owen_proj.png'},olaser:{src:'owen_laser.png'},osmoke:{src:'owen_smoke.png'},tfx:{src:'tedd_fx.png'},bfx:{src:'bof_fx.png'},cdeer:{src:'chief_deer.png'},celf:{src:'chief_elves.png'},cfx:{src:'chief_fx.png'},arrows:{src:'vogler_arrows.png'},sdragon:{src:'soren_dragon.png'},sfx:{src:'soren_fx.png'}};
 const SBC=84,SWC=230; // salty bullets (bullet 4, muzzle 4, impact 6) and Mush It wave (loop 8, fade 8)
@@ -2197,14 +2204,14 @@ function sheetFrame(f,sh){
   }
   return[row,col];
 }
-const DGW=448,DGH=320,DGX=224,DGY=290; // soren_dragon.png cells; rows: hover, walk, claw, tail, breath, cast, roar, hit 2 + block 2
+const DGW=512,DGH=320,DGX=224,DGY=290,DGN=[4,5,8,8,8,8,8,4]; // soren_dragon.png cells (frames per row in DGN); rows: hover, gallop, claw, wing sweep, breath (col 0 = standing), cast, roar, hit 2 + block 2
 function dragonFrame(f){
-  if(f.st==='atk'){const m=CH[f.c].moves[f.mv],row={l:2,al:2,h:3,ah:3,s1:4,s2:5,su:6}[f.mv]??2;return[row,Math.min(3,Math.floor(f.mf/m.len*4))]}
+  if(f.st==='atk'){const m=CH[f.c].moves[f.mv],row={l:2,al:2,h:3,ah:3,s1:4,s2:5,su:6}[f.mv]??2;return[row,Math.min(DGN[row]-1,Math.floor(f.mf/m.len*DGN[row]))]}
   if(f.st==='hit'||f.st==='grabbed')return[7,Math.min(1,Math.floor(f.t/5))];
   if(f.st==='block'||f.st==='bstun')return[7,f.st==='bstun'?3:2];
   if(f.st==='stun'||f.st==='ko'||f.st==='down')return[7,1];
-  if(!f.ground)return[0,Math.floor(f.t/6)%4];
-  if(f.st==='walk')return[1,Math.floor(f.t/5)%4];
+  if(!f.ground)return[0,Math.floor(f.t/6)%DGN[0]];
+  if(f.st==='walk')return[1,Math.floor(f.t/4)%DGN[1]];
   return[4,0];
 }
 function dragonArt(f){return f.dragon>0&&CH[f.c].id==='soren'&&fxOn('sdragon')}
@@ -2241,7 +2248,7 @@ function drawFighter(f,tagCol,tag){
   if(f.counter>0){g.strokeStyle='#ffd34d';g.lineWidth=3;g.globalAlpha=0.6+0.4*Math.sin(f.t);g.beginPath();g.arc(0,-c.h*0.5,c.h*0.66,0,7);g.stroke();g.globalAlpha=1}
   if(f.armor){g.strokeStyle='#ffffffaa';g.lineWidth=3;rr(-c.w/2-6,-c.h-6,c.w+12,c.h+12,14);g.stroke()}
   g.restore();
-  if(act&&act.dmg){ // swoosh trail on the attack's hitbox
+  if(act&&act.dmg&&!(c.id==='soren'&&f.mv==='ah')){ // swoosh trail on the attack's hitbox (not Soren's air heavy: his sprite has its own light burst)
     const b=hbox(f,act.box),cx=b[0]+b[2]/2,cy=b[1]+b[3]/2;
     g.save();g.translate(cx,cy);g.scale(f.face,1);
     g.strokeStyle=f.mv==='su'?'#ffd34dcc':'#ffffffaa';g.lineWidth=5;g.lineCap='round';
@@ -2280,7 +2287,7 @@ function drawProj(p){
   else if(p.kind==='wave'&&fxOn('swave')){const d=SWC/1.5;g.scale(Math.sign(p.vx)||1,1);fxCell(fxOn('swave'),(Math.floor(p.t/5)%8)*SWC,0,SWC,SWC,-d/2,-d/2,d,d)}
   else if(p.kind==='bullet'){g.fillStyle='#ffd34d';g.fillRect(-p.w/2,-p.h/2,p.w,p.h);g.fillStyle='#fff6';g.fillRect(-p.w/2-10*Math.sign(p.vx),-2,10,4)}
   else if(p.kind==='pamph'&&fxOn('fengpamph')){const d=56/1.5;g.scale(Math.sign(p.vx)||1,1);fxCell(fxOn('fengpamph'),(Math.floor(p.t/3)%8)*56,0,56,56,-d/2,-d/2,d,d)}
-  else if(p.kind==='frost'&&fxOn('sfx')){const d=p.big?100:72;g.scale(Math.sign(p.vx)||1,1);g.globalAlpha=Math.max(0,Math.min(1,1.6-1.6*p.t/(p.life+2)));fxCell(fxOn('sfx'),Math.min(5,Math.floor(p.t/(p.life)*7))*256,(p.big?1:0)*256,256,256,-d/2,-d/2,d,d);g.globalAlpha=1}
+  else if(p.kind==='frost'&&fxOn('sfx')){const d=p.big?64+p.t*2.4:72;g.scale(Math.sign(p.vx)||1,1);g.globalAlpha=Math.max(0,Math.min(1,1.6-1.6*p.t/(p.life+2)));fxCell(fxOn('sfx'),Math.min(5,Math.floor(p.t/(p.life)*7))*256,(p.big?1:0)*256,256,256,-d/2,-d/2,d,d);g.globalAlpha=1}
   else if(p.kind==='frost'){const k=Math.min(1,p.t/8),r=(p.big?16:11)+p.t*0.5;g.globalAlpha=Math.max(0,1-p.t/(p.life+2));const gr=g.createRadialGradient(0,0,1,0,0,r);gr.addColorStop(0,'#ffffff');gr.addColorStop(0.5,'#bfe6ff');gr.addColorStop(1,'#7fb8ff00');g.fillStyle=gr;g.beginPath();g.arc(0,0,r*k+4,0,7);g.fill();g.fillStyle='#ffffff';for(let i=0;i<3;i++)g.fillRect(Math.cos(p.t+i*2)*r*0.6,Math.sin(p.t*1.3+i)*r*0.5,2,2)}
   else if(p.kind==='moon'&&fxOn('sfx')){const d=84;g.scale(Math.sign(p.vx)||1,1);fxCell(fxOn('sfx'),(p.t<9?Math.floor(p.t/3):2+Math.floor(p.t/4)%2)*256,2*256,256,256,-d/2-14,-d/2,d,d)}
   else if(p.kind==='moon'){g.scale(Math.sign(p.vx)||1,1);g.shadowColor='#dfe9ff';g.shadowBlur=14;g.fillStyle='#f4f7ff';g.beginPath();g.arc(0,0,11,-1.3,1.3);g.arc(-5,0,9,1.2,-1.2,true);g.fill();g.shadowBlur=0;g.fillStyle='#dfe9ff66';g.fillRect(-26,-2,18,4)}
@@ -3038,7 +3045,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){netSend({t:'select'});netGoSelect(
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.11'; // shown on the title screen; online players must match
+const VERSION='0.2.12'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 (function checkForUpdate(){ // phones cache the page: if the copy on the server is newer, say so
