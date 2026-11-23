@@ -1,0 +1,93 @@
+PARTY BRAWL - PATCH NOTES v0.2.13
+Released 2026-11-22
+
+NEW ART
+- Soren: all-new sprites with grown-up proportions (no more chibi), including every attack, his
+  Silver Dragon roar, and a new hit, stunned and block set.
+- Soren's Silver Dragon: all-new dragon sprites. Hover, gallop, claw, wing sweep, breath, roar, hit
+  and block. The wing sweep is his heavy.
+- Big Chief: all-new sprites, a little shorter than before (he's an elf), and a new character-select
+  portrait.
+- Big Chief's Union Break has its own animation: he plants his sign, sits down and has a coffee.
+- Tenebrund: all-new sprites based on his campaign art: a big, bearded battlerager dwarf in spiked
+  armour over a patched tunic. Shoulder-charge heavy, spinning-ball air heavy, a proper bear-hug-and-grind
+  Cheese Grater, an armpit-sniffing Stink Cloud and a full Belly Flop.
+- Tenebrund's effects are new too: a bubbling stink cloud, metal sparks on the Cheese Grater, a ground
+  slam with flying rocks and dust on the Belly Flop, and his flies. The Stink Cloud is a see-through
+  dome that fighters stand inside, with small puffs drifting up out of it. The Belly Flop crater sits
+  on the ground behind the fighters.
+- Tedd: all-new sprites: a grey-skinned super mutant with a flaming Shishkebab and his Board with a Nail
+  strapped to his back. Overhead flaming chop, flaming air spin, a head-down Pain Train charge, the BONK,
+  and the WANNA BE FRIENDS? bear hug and toss. He lumbers around at a fast walk instead of running.
+  New grey character-select portrait too.
+
+SOREN - SILVER DRAGON
+- Hitbox matches the dragon: a body box (haunches to chest, ground to shoulders) plus a neck-and-head box.
+  The tail and wing tips still can't be hit. In the air both boxes sit a little higher, like the hover art.
+- He takes up real space: fighters get pushed out to the front of his chest (or the back of his haunches)
+  instead of standing inside him.
+- His normals are dragon-sized: claw, wing sweep, air claw and air tail reach about as far as the art.
+- Unfazed: hits that deal under 30 damage (after his damage reduction) never make him flinch, and bigger
+  hits have a 25% chance not to. He still takes all the damage. Unblockable attacks always make him flinch.
+- Jumps 15% higher and glides 35% faster through the air.
+- To pay for the above: damage taken -30% -> -20%, damage dealt +32% -> +20%.
+- The CPU now judges distance from the edge of a fighter's body, so it attacks the dragon from the right range.
+
+SOREN
+- Frost Breath puffs that hit don't vanish any more: they stop hurting and fade out on the target, so you
+  can see the breath landing up close.
+- No white swoosh on his air heavy (the new sprite has its own light burst).
+
+BIG CHIEF
+- His animations now line up with his hitboxes: the punch, the sign chop, the air kick and the air
+  sign swing are on screen while they can hit.
+- Heavy hitbox reshaped to the overhead sign chop: from just above his head down to his hip (taller,
+  same reach).
+
+TENEBRUND
+- His animations line up with his hitboxes: the punch, shoulder charge, air knee, spin and the
+  Cheese Grater lunge are on screen while they can hit. (No hitbox changes.)
+
+TEDD
+- Bigger: about 9% taller and wider, body and hitboxes alike (body 60x106 -> 65x115). His attacks reach
+  about 9% further and he is a slightly bigger target.
+- His animations line up with his hitboxes, including Board with a Nail (the BONK swing is on screen
+  while it can hit).
+- Heavy hitbox reshaped to the overhead Shishkebab chop: from head height down to his knee.
+
+SALTY
+- Mush It is now three small sound waves in a tight cone instead of one huge wave. Each does 24 with a
+  small shove. If all three hit, it's 72 (was 66) with the same big shove as before. They start stacked
+  close enough that all three hit a standing fighter up close, and spread apart with distance, so a jump
+  or a short fighter far away can slip some of them.
+- His animations now line up with his hitboxes: the light punch, the accordion slam (heavy) and the air
+  heavy swing are on screen while they can hit, not a few frames after.
+- Heavy hitbox reshaped to the overhead slam (taller, same reach).
+- Air heavy is a forward accordion swing at chest height now, not a stomp under his feet.
+
+CALDER GRIMM
+- Syringer cooldown 1.33s -> 2s.
+- Tranquilizer stun 0.83s -> 0.75s (Syringer and Overdose).
+- Field Chemist crafts more often: every 10-17s (was 12-20s).
+
+HEAVY RAIL
+- Health 1180 -> 1280.
+- Power 1.15 -> 1.25 (everything he does hits about 9% harder).
+- Power Armor Drop steers after the enemy while he's in the air and comes down fast after the top of
+  the jump, so it's much harder to just walk away from. (Since v0.2.11 he falls through platforms on
+  the way down, which made the drop slow and easy to dodge.)
+
+STAGES
+- NEW STAGE: Avernus (Descent into Avernus). A hellish wasteland where Baldur's Gate hangs on chains in
+  the sky and Fat Peggy, the party's war machine, sits parked behind the fight. Flat cracked hellrock
+  with two boulders to hop or stand on, and three cracked hilltops to climb (the centre crag is the
+  highest). Music: "Fat Peggy".
+- Avernus hazard: infernal war machines. About every 14 seconds a warning flashes on one side, then a
+  war machine drives straight across the ground, kicking up dust: a devil on an Infernal Rider war bike
+  (60 damage, easy to hop), the saw-wheeled Crusher (90, time your jump) or Fat Peggy herself (120,
+  double jump or get up a hill). Unblockable, and it launches you the way it was going. The hilltops
+  are safe.
+- Da Fuck Den: the floor is a little lower, so fighters stand on the floorboards instead of floating at
+  the back wall. Gravity there is a touch lighter (x0.9), so the balconies and chandelier take the same
+  jumps as before.
+- Stage select fits five stages to a row.

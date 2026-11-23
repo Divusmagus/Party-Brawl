@@ -52,7 +52,7 @@ button[disabled]{opacity:.45;cursor:default}
 .roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;align-content:start}
 .tile{position:relative;padding:0;border-radius:10px;background:radial-gradient(circle at 50% 30%,#3a3070,#120e26 75%);border:2px solid #ffffff1a;aspect-ratio:3/4;overflow:hidden;min-height:0}
 .tile canvas,.tile img{width:100%;height:100%;object-fit:cover;display:block;image-rendering:pixelated}
-.roster.stroster{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.roster.stroster{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 .stile .nm{position:absolute;left:0;right:0;bottom:0;padding:18px 4px 6px;font:20px/1.05 Bangers,Impact,sans-serif;overflow-wrap:anywhere;letter-spacing:.5px;text-align:center;color:#fff;background:linear-gradient(#0000,#000c);text-shadow:0 1px 2px #000}
 .stile.rnd::after{content:'?';position:absolute;inset:0;display:grid;place-items:center;font:64px Bangers,Impact,sans-serif;color:#f2b134;text-shadow:0 3px 0 #000,0 0 16px #000}
 .stile .lock.vote{background:#ff6a6a;left:auto;right:4px}.stile .lock.host{background:#6ab8ff}
@@ -223,7 +223,8 @@ kbd{font:600 12px Rubik,sans-serif;background:#000;border:1px solid var(--line);
    randomness comes from state.rng, step(state, [in1,in2]) is the only
    way the game moves forward. That is what online rollback will need.)
    ===================================================================== */
-const W=960,H=540,FLOOR=470,GRAV=0.8,WALL_L=20,WALL_R=940,FPS=60;
+const W=960,H=540,BASE_FLOOR=470,GRAV=0.8,WALL_L=20,WALL_R=940,FPS=60;
+let FLOOR=BASE_FLOOR; // ground height: per stage (STAGE.floorY), set by setStage
 const K={L:1,R:2,U:4,B:8,LP:16,HP:32,S1:64,S2:128,SU:256,D:512}; // D = down: drops through a platform when tapped on one, otherwise blocks like B
 /* ---------- stages: floor segments (gaps allowed), an optional water pit, platforms, spawns, hazard ---------- */
 const STAGES=[
@@ -268,14 +269,18 @@ const STAGES=[
    plats:[{x:22,y:308,w:200},{x:264,y:350,w:198},{x:467,y:266,w:130}, // ruin roof, shack roof, water tower catwalk
           {x:610,y:418,w:190},{x:800,y:400,w:138}], // pier, boat deck
    spawn:[200,540],hazard:'bloatfly',art:{src:'tahoe_bg.png',yOff:0}},
-  {id:'fuckden',name:'Da Fuck Den',camp:'Dragon Heist',floor:[[WALL_L,WALL_R]], // the party's inn-turned-brothel: the main lobby, stuffed David on the front counter
+  {id:'fuckden',name:'Da Fuck Den',camp:'Dragon Heist',floor:[[WALL_L,WALL_R]],floorY:490,grav:0.9, // ground 20 lower (feet on the floorboards, not the back wall); gravity x0.9 so the balconies and chandelier take the same jumps (heaviest fighters clear a balcony by the same margin) // the party's inn-turned-brothel: the main lobby, stuffed David on the front counter
    plats:[{x:WALL_L,y:326,w:167},{x:773,y:326,w:167}, // the front ends of the upper floor, ~144 up: every fighter can reach them (the floor wraps round the back of the lobby, but only these parts are walkable)
           {x:355,y:280,w:250,tilt:0}], // the chandelier: highest (50 above the balconies, 165 across from them: even the heaviest fighters make the jump), hangs over the middle and tips like a seesaw
    swing:{i:2,hookX:480,hookY:75,baseY:280,img:'fuckden_chand.png',ringX:606,ringY:534,ringW:1191,capY:38,tile:[585,95,46,57]}, // hangs from the painted hook: chain + chandelier swing as one rigid piece about it
    david:{x:480,y:FLOOR+40,h:100,img:'fuckden_david.png',front:1}, // in the foreground: lower on screen (closer to the camera) and drawn over the fighters // stuffed David: his own sprite, standing on the lobby floor in front of the counter (sized to a gnome, not baked into the painting)
    spawn:[220,740],hazard:null,art:{src:'fuckden_bg.png',yOff:0,over:[ // depth: anyone up on a balcony is drawn behind its railing (posts, handrail, balusters, bottom rail)
      {rect:[5,416,44,162],layer:'front',plats:[0]},{rect:[285,414,41,164],layer:'front',plats:[0]},{rect:[37,456,263,23],layer:'front',plats:[0]},{rect:[60,478,26,90],layer:'front',plats:[0]},{rect:[105,478,29,90],layer:'front',plats:[0]},{rect:[150,478,26,90],layer:'front',plats:[0]},{rect:[196,478,28,90],layer:'front',plats:[0]},{rect:[242,478,29,90],layer:'front',plats:[0]},{rect:[0,566,326,36],layer:'front',plats:[0]},
-     {rect:[1347,414,41,164],layer:'front',plats:[1]},{rect:[1627,416,45,162],layer:'front',plats:[1]},{rect:[1384,456,250,23],layer:'front',plats:[1]},{rect:[1403,478,28,90],layer:'front',plats:[1]},{rect:[1449,478,28,90],layer:'front',plats:[1]},{rect:[1494,478,29,90],layer:'front',plats:[1]},{rect:[1539,478,27,90],layer:'front',plats:[1]},{rect:[1584,478,29,90],layer:'front',plats:[1]},{rect:[1347,566,325,36],layer:'front',plats:[1]}]}}];
+     {rect:[1347,414,41,164],layer:'front',plats:[1]},{rect:[1627,416,45,162],layer:'front',plats:[1]},{rect:[1384,456,250,23],layer:'front',plats:[1]},{rect:[1403,478,28,90],layer:'front',plats:[1]},{rect:[1449,478,28,90],layer:'front',plats:[1]},{rect:[1494,478,29,90],layer:'front',plats:[1]},{rect:[1539,478,27,90],layer:'front',plats:[1]},{rect:[1584,478,29,90],layer:'front',plats:[1]},{rect:[1347,566,325,36],layer:'front',plats:[1]}]}},
+  {id:'avernus',name:'Avernus',camp:'Descent into Avernus',floor:[[WALL_L,WALL_R]], // the hellish wasteland: Fat Peggy parked behind, Baldur's Gate hanging on its chains in the sky
+   blocks:[{x0:266,x1:356,h:41},{x0:590,x1:684,h:51}], // two boulders: solid, jump over or stand on them (the war machines ram straight through)
+   plats:[{x:46,y:344,w:176},{x:404,y:304,w:164},{x:746,y:344,w:184}], // cracked hilltops: left, centre crag (highest), right; drop-through. Measured from the painting (yOff 10)
+   spawn:[200,760],hazard:'machines',art:{src:'avernus_bg.png',yOff:10}}];
 let STAGE=STAGES[0],PLATS=STAGE.plats;
 const STAGE_ART={}; // stage id -> hand-painted background image (from the art pipeline), used when loaded
 // (setStage is defined with the navigation code below)
@@ -313,7 +318,10 @@ const CHIEF_NORM=1.0,HAWK_MUL=1.2,HAWK_KB=1.3,BEAR_SHIELD=0.10; // Big Chief: no
 const TOTEMS=[{id:'unicorn',n:'UNICORN TOTEM!',col:'#9bf0a0',hue:0},{id:'bear',n:'BEAR TOTEM!',col:'#d8a060',hue:-95},{id:'hawk',n:'HAWK TOTEM!',col:'#ffd34d',hue:-70}];
 const GUIDE_T=240,GUIDE_BONUS=1.2; // Guiding Bolt: the mark lasts 4s; his next direct hit on them does +20%
 const DRAGON_CONE=[-2,0,1.4,2.6]; // dragon breath fan: vertical speed of each puff (from his mouth: up a little, straight, down, down to the ground)
-const SOREN_BREATH=13,DRAGON_T=480,DRAGON_TAKE=0.7,DRAGON_HIT=1.32,DRAGON_SPD=1.15,GLIDE_VY=1.8; // Soren: breath damage per puff, dragon form (6s): damage taken / dealt, speed; max fall speed while gliding
+const DRAGON_HURT=[[-88,-118,128,118],[20,-182,56,72]],DRAGON_AIR_Y=-20; // Silver Dragon hurtboxes facing right [x,y,w,h] from his feet: body (haunches to chest, ground to shoulders) + neck/head; raised 20 in the air (hover frames sit higher). Tail and wing tips can't be hit
+const DRAGON_BOX={l:[20,-120,105,60],h:[20,-130,160,110],al:[0,-110,110,80],ah:[-20,-80,120,80]}; // Silver Dragon normals: claw / wing sweep / air claw / air tail, sized to the art
+const DRAGON_NOFLINCH=30,DRAGON_NOFLINCH_P=0.25,DRAGON_JUMP=1.15,DRAGON_GLIDE=1.35; // Silver Dragon: hits under 30 (after his damage reduction) never flinch him, bigger ones 25% of the time (unblockables always do); jump 15% stronger; 35% faster in the air while gliding
+const FROST_FADE=12,SOREN_BREATH=13,DRAGON_T=480,DRAGON_TAKE=0.8,DRAGON_HIT=1.2,DRAGON_SPD=1.15,GLIDE_VY=1.8; // Soren: breath damage per puff, dragon form (6s): damage taken / dealt, speed; max fall speed while gliding
 const UNION_BREAK=150,PAX_MUL=1.2,SMOKE_LIFE=240,TOTEM_HEAL=5,TOTEM_DMG=12,DEER_DMG=34,DEER_CD=360,TRAIN_END=52,SMOKE_MISS=[0.5,0.25,0],SMOKE_CRIT=0.3,ACR_DMG=18,TRAIN_V=8.5,TRAIN_BASE=6,TRAIN_PER=0.95,TRAIN_WALL=30,STRIKE_HITS=5,STRIKE_DMG=40,HUG_SQUEEZE=22,HUG_THROW=55,DART_CD=360;
 // Calder's syringer: each dart uses one chem that's ready; that chem then needs DART_CD frames to come back
 const MUSIC={ // song files by slot; null = no song yet, so the code-made chiptune plays
@@ -322,19 +330,20 @@ const MUSIC={ // song files by slot; null = no song yet, so the code-made chiptu
     goldenfields:'music/stage_brogade.mp3',spine:'music/stage_brogade.mp3', // Ballad of the Brogade (Storm King's Thunder)
     vogler:'music/stage_dicks.mp3',fuckden:'music/stage_fuckden.mp3', // D.I.C.K.S.: The Final Thrust (Dragonlance; reuse for future Dragonlance stages)
     ship:'music/stage_traveller.mp3', // Starfire Extermination (Beyond the Nest / Traveller)
-    tahoe:'music/stage_fallout.mp3'}, // Neon Under Nuclear Skies (Fallout)
+    tahoe:'music/stage_fallout.mp3', // Neon Under Nuclear Skies (Fallout)
+    avernus:'music/stage_avernus.mp3'}, // Fat Peggy (Descent into Avernus)
   themes:{frica:'music/theme_frica.mp3',madog:'music/theme_madog.mp3',soren:'music/theme_soren.mp3' /* Silver Flames */}}; // character themes
 const hasTheme=ci=>!!MUSIC.themes[CH[ci].id];
-const CRAFT_MIN=720,CRAFT_VAR=481,JET_T=360,MEDX_T=360,JET_SPD=1.25,MEDX_TAKE=0.75,STIM_HEAL=0.07,PSYCHO_T=360,PSYCHO_MUL=1.25; // Calder's Field Chemist: 12-20s between crafts, 6s effects
+const CRAFT_MIN=600,CRAFT_VAR=421,JET_T=360,MEDX_T=360,JET_SPD=1.25,MEDX_TAKE=0.75,STIM_HEAL=0.07,PSYCHO_T=360,PSYCHO_MUL=1.25; // Calder's Field Chemist: 10-17s between crafts, 6s effects
 const CHEM_SHOW=[240,50,300,60,300]; // how long each chem's icon floats over them (frames)
 const CHEMS=[
  {n:'SCORPION VENOM!',col:'#9bd35a',fx:(s,a,d)=>{d.poison=Math.max(d.poison,240)}},
- {n:'TRANQUILIZER!',col:'#8fc8ff',fx:(s,a,d)=>{d.st='stun';d.t=0;d.stunLen=50;d.softStun=1;d.mv=null;d.vx=0}},
+ {n:'TRANQUILIZER!',col:'#8fc8ff',fx:(s,a,d)=>{d.st='stun';d.t=0;d.stunLen=45;d.softStun=1;d.mv=null;d.vx=0}},
  {n:'PAX!',col:'#ffd0e8',fx:(s,a,d)=>{d.pax=Math.max(d.pax,300)}},
  {n:'YELLOW BELLY!',col:'#ffe24a',fx:(s,a,d)=>{const w=CH[d.c].weight,dir=d.x>=a.x?1:-1;d.vx=dir*15/w;d.vy=-9/w;d.ground=false;d.launched=1;if(Math.abs(d.vx)>9)d.splat=0}},
  {n:'BERSERK!',col:'#ff5a3a',fx:(s,a,d)=>{d.berserk=Math.max(d.berserk,300)}}];
-function inSmoke(s,f,owner){const h=hurt(f);return s.zones.some(z=>z.k==='smoke'&&z.o===owner&&ov([z.x-z.w/2,z.y-z.h,z.w,z.h],h)&&!doorBetween(s,z.x,f.x))}
-const OD_T=[240,50,300,0,300]; // Overdose chem durations (frames): venom, tranq stun, pax, Yellow Belly's slow (none), berserk = the normal ones. Tested: 2x durations put Calder at ~66%, 1.5x at ~65%, these at ~57%
+function inSmoke(s,f,owner){return s.zones.some(z=>z.k==='smoke'&&z.o===owner&&hitsF([z.x-z.w/2,z.y-z.h,z.w,z.h],f)&&!doorBetween(s,z.x,f.x))}
+const OD_T=[240,45,300,0,300]; // Overdose chem durations (frames): venom, tranq stun, pax, Yellow Belly's slow (none), berserk = the normal ones. Tested: 2x durations put Calder at ~66%, 1.5x at ~65%, these at ~57%
 function odChem(s,a,d,q){ // an Overdose dart's chem; a repeat just resets the timer (stacking to double strength removed in v0.2.10)
   if(d.st==='ko')return;s.fx.push({k:'cdhit',x:d.x,y:d.y-62,life:18,t:0});let st=false;
   if(q===0){st=d.poison>0;d.poison=OD_T[0];d.poisonLv=Math.max(1,d.poisonLv||0)}
@@ -424,7 +433,7 @@ const CH=[
   s1:mv({n:"Bubbles' Pistols",d:'Bubbles fires two quick shots, then needs a long reload. Bullets do half damage to shields',su:10,ac:1,re:16,len:28,dmg:0,box:[0,0,0,0],cd:80,
     tick:(s,a,f)=>{if(f===10||f===16)proj(s,a,{kind:'bullet',y:a.y-(f===10?78:66),vx:a.face*14,w:14,h:8,life:80,dmg:52,kb:[3,0],hs:14})}}),
   s2:mv({n:'Mush It',d:'He belts out the only song he knows on his accordion: a big sound wave that shoves them away. Hits hardest up close and fades with distance',su:14,ac:1,re:16,dmg:0,box:[0,0,0,0],cd:140,
-    tick:(s,a,f)=>{if(f===14){proj(s,a,{kind:'wave',falloff:1,y:a.y-100,vx:a.face*5,w:50,h:120,life:150,dmg:66,kb:[14,-4],hs:22});say(s,a.x,a.y-125,'♪ MUSH IT! ♪','#8fc8ff',34)}}}),
+    tick:(s,a,f)=>{if(f===14){const grp=s.frame*2+a.i+1;MUSH.vy.forEach((vy,k)=>proj(s,a,{kind:'wave',sc:MUSH.sc,falloff:1,grp,mush:1,gh:0,y:a.y+MUSH.y[k],vx:a.face*5,vy,w:MUSH.w,h:MUSH.h,life:150,dmg:MUSH.dmg,kb:MUSH.kb,hs:16}));say(s,a.x,a.y-125,'♪ MUSH IT! ♪','#8fc8ff',34)}}}), // three small waves in a tight cone
   su:mv({n:'Bubbles Goes Bananas',d:'Bubbles unloads a full barrage across the arena',su:12,ac:1,re:20,len:72,dmg:0,box:[0,0,0,0],inv:[0,12],
     start:(s,a)=>say(s,a.x,a.y-130,'BUBBLES, NO!','#ffd34d',44),
     tick:(s,a,f)=>{if(f>=12&&f<=56&&f%4===0){const k=(f/4)%3;proj(s,a,{kind:'bullet',y:a.y-(k===0?90:k===1?60:30),vx:a.face*15,w:14,h:8,life:80,dmg:30,kb:[3,-1],hs:16})}}}),
@@ -449,13 +458,13 @@ const CH=[
     onHit:(s,a,d)=>s.fx.push(a.mf>=50?{k:'dfinish',x:d.x,y:Math.min(FLOOR,d.y),life:28,t:0,dir:a.face}:{k:'dslash',x:(a.x+d.x)/2+a.face*10,y:d.y-50,life:12,t:0,dir:a.face})}),
  })},
 {id:'calder',name:'Calder Grimm',player:'Jon',camp:'Fallout',role:'Zoner',types:{s2:'Poison',su:'Poison'},
- passive:{n:'Field Chemist',d:'Every 12-20s he whips up a random chem: Jet (25% faster and cooldowns recover 50% faster for 6s), Med-X (25% less damage taken for 6s), Psycho (25% more damage for 6s), Addictol (clears poison, Pax, Berserk, MUDDLED, hexes and slows) or a Stimpak (heals 7% of max health)'},suAny:1,
+ passive:{n:'Field Chemist',d:'Every 10-17s he whips up a random chem: Jet (25% faster and cooldowns recover 50% faster for 6s), Med-X (25% less damage taken for 6s), Psycho (25% more damage for 6s), Addictol (clears poison, Pax, Berserk, MUDDLED, hexes and slows) or a Stimpak (heals 7% of max health)'},suAny:1,
  col:'#e8e4d8',col2:'#4a6a5a',skin:'#e0b48e',w:42,h:90,hp:950,spd:4.2,jump:-15,weight:0.95,pow:1.08,
  blurb:'Followers of the Apocalypse doctor. Hunting rifle, a syringer, and a bag of very questionable chems.',
  moves:Object.assign(normals({reach:6}),{
   s1:mv({n:'Hunting Rifle',d:'Slow to aim, then one fast, hard-hitting shot across the arena',su:20,ac:1,re:18,dmg:0,box:[0,0,0,0],cd:150,
     tick:(s,a,f)=>{if(f===20){proj(s,a,{kind:'rifle',y:a.y-66,vx:a.face*20,w:24,h:8,life:60,dmg:95,kb:[7,-3],hs:20});s.fx.push({k:'cmuzzle',x:a.x+a.face*52,y:a.y-66,col:'#ffd34d',life:8,t:0})}}}),
-  s2:mv({n:'Syringer',d:'Fires a dart loaded with a random chem: Scorpion Venom (poison), Tranquilizer (stun), Pax (takes 20% more damage), Yellow Belly (big knockback) or Berserk (can\'t block). Each chem needs 6s to come back once used',su:10,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:80,
+  s2:mv({n:'Syringer',d:'Fires a dart loaded with a random chem: Scorpion Venom (poison), Tranquilizer (stun), Pax (takes 20% more damage), Yellow Belly (big knockback) or Berserk (can\'t block). Each chem needs 6s to come back once used',su:10,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:120,
     tick:(s,a,f)=>{if(f===10)proj(s,a,{kind:'dart',y:a.y-64,vx:a.face*12,w:20,h:8,life:90,dmg:28,kb:[3,-1],hs:16,onHit:(s,a,d)=>chem(s,a,d,false)})}}),
   su:mv({n:'Overdose',d:'Six syringes: the first five are all five chems in a random order, the sixth is random. Chems get through a block, and a repeat chem resets its timer',su:12,ac:1,re:20,len:74,dmg:0,box:[0,0,0,0],inv:[0,12],
     start:(s,a)=>say(s,a.x,a.y-130,'TIME FOR YOUR MEDICINE!','#9bf0a0',36),
@@ -465,17 +474,17 @@ const CH=[
  })},
 {id:'heavyrail',name:'Heavy Rail',player:'Matt',camp:'Fallout',role:'Heavy',types:{s1:'Energy',s2:'Energy',su:'Explosive'},
  passive:{n:'Power Armor',d:'Takes 25% less knockback from everything'},kbMul:0.75,suAny:1,farS1:0.14,
- col:'#7c816e',col2:'#c9a227',skin:'#d8a882',w:56,h:100,hp:1180,spd:3.5,jump:-13.5,weight:1.35,pow:1.15,
+ col:'#7c816e',col2:'#c9a227',skin:'#d8a882',w:56,h:100,hp:1280,spd:3.5,jump:-13.5,weight:1.35,pow:1.25,
  blurb:'Brotherhood of Steel in full power armor. Here to reclaim technology, one plasma bolt at a time.',
  moves:Object.assign(normals({reach:10}),{
   s1:mv({n:'Plasma Bolt',d:'A slow, glowing bolt of plasma',su:14,ac:1,re:18,dmg:0,box:[0,0,0,0],cd:75,
     tick:(s,a,f)=>{if(f===14)proj(s,a,{kind:'plasma',y:a.y-66,vx:a.face*7.5,w:28,h:28,life:140,dmg:72,kb:[8,-4],hs:20})}}),
   s2:mv({n:'Laser Sweep',d:'Sweeps a laser beam a long way in front of him: three quick hits',su:12,re:16,len:42,dmg:22,box:[20,-84,230,28],kb:[2,0],hs:12,wins:[[12,15],[17,20],[22,25]],dmgs:[22,22,30],kbs:[[2,0],[2,0],[6,-2]],cd:160}),
-  su:mv({n:'Power Armor Drop',d:'Rockets up out of sight and slams down on the enemy',su:14,ac:1,re:30,dmg:0,box:[0,0,0,0],len:120,armor:[0,120],
+  su:mv({n:'Power Armor Drop',d:'Rockets up out of sight, steers after the enemy and slams down on them',su:14,ac:1,re:30,dmg:0,box:[0,0,0,0],len:120,armor:[0,120],
     start:(s,a)=>say(s,a.x,a.y-130,'AD VICTORIAM!','#f2b134',40),
     tick:(s,a,f,m)=>{
       if(f===14){const d=opp(s,a);a.vy=-19;a.ground=false;a.vx=Math.max(-12,Math.min(12,(d.x-a.x)/40));a.md.air=1}
-      if(a.md.air===1&&!a.ground)slamPass(s,a,180);
+      if(a.md.air===1&&!a.ground){slamPass(s,a,180);const d=opp(s,a);a.vx+=(Math.max(-12,Math.min(12,(d.x-a.x)/12))-a.vx)*0.25;if(a.vy>0)a.vy=Math.max(a.vy,13)} // steers toward the enemy in the air and rockets down fast after the top (since v0.2.11 he falls through platforms, so the slow drop let people walk away)
       if(a.md.air===1&&f>18&&a.ground){a.md.air=2;s.shake=18;s.fx.push({k:'hrslam',x:a.x,y:a.y,life:32,t:0,col:'#f2b134'});
         const d=opp(s,a);if(Math.abs(d.x-a.x)<180&&d.y>a.y-130)hitF(s,a,d,{dmg:250,kb:[11,-13],hs:44,launch:true,unb:true,dir:d.x>=a.x?1:-1,src:'su'});
         a.mf=m.len-28}}}),
@@ -495,14 +504,14 @@ const CH=[
  })},
 {id:'tedd',name:'Tedd the Friendly',player:'Jay',camp:'Fallout',role:'Heavy',types:{l:'Fire',h:'Fire',al:'Fire',ah:'Fire'},
  passive:{n:'Mutant Hide',d:'Takes 15% less Poison and Explosive damage'},resist:{Poison:0.15,Explosive:0.15},
- col:'#8a9a4a',col2:'#7a2a1a',skin:'#93a44e',w:60,h:106,hp:1350,spd:3.8,jump:-13.5,weight:1.45,pow:1.25,
+ col:'#8a9a4a',col2:'#7a2a1a',skin:'#93a44e',w:65,h:115,hp:1350,spd:3.8,jump:-13.5,weight:1.45,pow:1.25,
  blurb:'Super mutant who just wants to make friends. Swings a flaming Shishkebab while he asks.',
  moves:Object.assign(normals({reach:22}),{
   s1:mv({n:'Pain Train',d:'Charges forward and carries anyone he hits along with him, hurting them the whole way. Pin them against a wall and it hurts twice as much from then on, plus a big slam at the end. A tap is just a gap closer',su:10,ac:1,re:20,len:TRAIN_END+20,dmg:0,box:[0,0,0,0],cd:420,mv:[[8,TRAIN_END,TRAIN_V]],
     start:(s,a)=>say(s,a.x,a.y-125,'PAIN TRAIN!','#ff8a1a',30),
     tick:(s,a,f,m)=>{const d=opp(s,a);
       if(f>=8&&f<TRAIN_END&&f%5===0)s.fx.push({k:'ttrain',x:a.x-a.face*34,y:a.y,dir:a.face,life:15,t:0});
-      if(a.md.drag===undefined&&f>=8&&f<TRAIN_END&&ov(hbox(a,[0,-100,40,96]),hurt(d))){ // contact: grab them onto the front of the train
+      if(a.md.drag===undefined&&f>=8&&f<TRAIN_END&&hitsF(hbox(a,[0,-100,40,96]),d)){ // contact: grab them onto the front of the train
         if(hitF(s,a,d,{dmg:6,kb:[0,0],hs:30,src:'s1'})&&(d.st==='hit'||d.shrugT===s.frame)){d.st='hit';d.t=0;d.mv=null;d.hst=Math.max(d.hst,6);a.md.drag=0;say(s,d.x,d.y-110,'ALL ABOARD!','#ffd34d',22)}else{a.mf=TRAIN_END;a.vx=-a.face*4}}
       if(a.md.drag!==undefined&&a.md.drag>=0){
         const gap=(CH[a.c].w+CH[d.c].w)/2-8,hw=CH[d.c].w/2,ahead=a.x+a.face*(gap+Math.abs(a.vx)),pinned=a.face>0?ahead>=WALL_R-hw-1:ahead<=WALL_L+hw+1;
@@ -564,13 +573,16 @@ const CH=[
       proj(s,a,{kind:'frost',big,x:a.x+a.face*30,y:a.y-70+((f/4)%3-1)*8,vx:a.face*8.5,w:28,h:24,life:22,dmg:SOREN_BREATH,kb:[1.2,0],hs:6,onHit:chill})}}}),
   s2:mv({n:'Guiding Bolt',d:'His signature spell: a bolt of radiant light fired straight ahead. A hit leaves the target glowing for 4s, and his next hit on them does 20% more damage',su:14,ac:1,re:16,len:34,dmg:0,box:[0,0,0,0],cd:58,
     tick:(s,a,f)=>{if(f===14)proj(s,a,{kind:'moon',y:a.y-62,vx:a.face*10,w:26,h:18,life:110,dmg:76,kb:[5,-3],hs:16,onHit:(s,a,d)=>{d.guided=GUIDE_T;s.fx.push({k:'sfx',row:3,x:d.x,y:d.y-60,life:18,t:0,d:96})}})}}),
-  su:mv({n:'Silver Dragon',d:'Roars (knocking back anyone close) and takes the form of a silver dragon for 8s: takes 30% less damage, hits 32% harder, moves faster, and his breath gets bigger',su:14,ac:1,re:18,len:36,dmg:0,box:[0,0,0,0],inv:[0,22],
+  su:mv({n:'Silver Dragon',d:'Roars (knocking back anyone close) and takes the form of a silver dragon for 8s: takes 20% less damage, hits 20% harder, only flinches from big hits (and not always), moves, jumps and glides faster, and his breath gets bigger',su:14,ac:1,re:18,len:36,dmg:0,box:[0,0,0,0],inv:[0,22],
     start:(s,a)=>say(s,a.x,a.y-130,'SILVER DRAGON!','#dfe9ff',42),
     tick:(s,a,f)=>{if(f===14){a.dragon=DRAGON_T;s.fx.push({k:'ring',x:a.x,y:a.y-50,life:22,t:0,col:'#dfe9ff'},{k:'sfx',row:5,x:a.x,y:a.y-10,life:24,t:0,d:340});s.shake=Math.max(s.shake,8);const d=opp(s,a);
       if(Math.abs(d.x-a.x)<170&&Math.abs(d.y-a.y)<140&&d.st!=='ko')hitF(s,a,d,{dmg:110*CH[a.c].pow,kb:[10,-7],hs:22,launch:true,dir:d.x>=a.x?1:-1,src:'su'})}}}),
  })},
 ];
-const SALTY_HEAVY=[52,[14,-4]];{const h=CH.find(c=>c.id==='salty').moves.h;h.dmg=SALTY_HEAVY[0];h.kb=SALTY_HEAVY[1];h.kbs=null} // Salty's accordion swing: a shove to make space, not a damage source
+const MUSH={y:[-70,-46,-22],vy:[-0.45,0,0.45],w:34,h:28,sc:0.5,dmg:24,kb:[5,-1.5],kb3:[14,-4],hs3:22}; // Mush It: three waves (top, middle, bottom) spreading slightly; each 24 with a small shove, the third to hit the same target shoves like the old single wave (14,-4)
+{const h=CH.find(c=>c.id==='chief').moves.h;h.box=[8,-82,84,52]} // Big Chief's overhead sign chop: covers the whole arc, above his head down to the hip (was [8,-80,84,34])
+{const m=CH.find(c=>c.id==='tedd').moves;m.l.box=[8,-81,81,26];m.h.box=[8,-92,98,76];m.al.box=[0,-61,78,44];m.ah.box=[-15,-37,96,46];m.s2.box=[8,-96,78,46]} // Tedd's boxes, 9% bigger with his bigger sprite (body 65x115, was 60x106); the heavy covers the overhead chop from head height to the knee
+const SALTY_HEAVY=[52,[14,-4]];{const sm=CH.find(c=>c.id==='salty').moves,h=sm.h;h.dmg=SALTY_HEAVY[0];h.kb=SALTY_HEAVY[1];h.kbs=null;h.box=[8,-100,60,76];sm.ah.box=[8,-80,66,48]} // boxes fitted to his sprite: the heavy is an overhead slam down in front (reaches 68), the air heavy swings the accordion forward at chest height (not a stomp) // Salty's accordion swing: a shove to make space, not a damage source
 const TEDD_NORMALS={l:30,h:66,ah:58,lkb:[2,0],hkb:[6,-4]};{const tm=CH.find(c=>c.id==='tedd').moves;tm.l.dmg=TEDD_NORMALS.l;tm.l.kb=TEDD_NORMALS.lkb;tm.h.dmg=TEDD_NORMALS.h;tm.h.kb=TEDD_NORMALS.hkb;tm.ah.dmg=TEDD_NORMALS.ah} // Tedd's long flaming blade: lighter hits now that Pain Train carries his damage
 const DASK_NORMALS={l:53,h:115};{const dm=CH.find(c=>c.id==='dask').moves;dm.l.dmg=DASK_NORMALS.l;dm.h.dmg=DASK_NORMALS.h} // Dask hits harder with plain swings now that Reckless Rage is slower
 CH.forEach((c,i)=>{c.i=i});
@@ -586,6 +598,11 @@ const DOOR_CRUSH={r:40,dmg:120,stun:60}; // caught in the door as it seals: big 
 const LOW_GRAV=0.5; // gravity in the airlock rooms (jumps go about twice as high)
 const VENT={every:900,vary:240,warn:100,act:180,drain:7,pull:0.5}; // an airlock vents every ~15s (+/-4)
 const BLOATFLY={every:780,vary:240,dmg:40,life:480,spd:2.6}; // a bloatfly every ~13s (+/-4): one bite, then it leaves
+const MACHINES={every:840,vary:240,warn:90,types:[ // Avernus: every ~14s (+/-4) an infernal war machine roars in from one side and drives straight across the ground
+  {k:'raider',name:'INFERNAL RIDER!',w:110,h:66,spd:15,dmg:60,kb:[10,-8],art:{fx:'avrider',n:16,fw:231,fh:165,k:0.4521,gx0:10,gy:352}},   // a devil on a war bike, small and fast: hop it
+  {k:'brute',name:'CRUSHER!',w:157,h:82,spd:11,dmg:90,kb:[12,-10],art:{fx:'avcrusher',n:11,fw:336,fh:173,k:0.656,gx0:20,gy:258}},          // saw-wheel brute: fighter height, time your jump (heavies need the double jump)
+  {k:'buggy',name:'FAT PEGGY!',w:185,h:105,spd:8.5,dmg:120,kb:[14,-12],art:{fx:'avpeggy',n:14,fw:461,fh:249,k:0.9013,gx0:10,gy:268}}]}; // the party's own war machine, the big one: double jump or get up a hill
+// art: sprite strip (frames side by side, stored at 2x game scale k = stored px per sheet px), drawn facing left; gx0 = the front of the hitbox in sheet px, gy = ground line in sheet px (from the crop top). Hitbox w,h = the hull (claws/horns/nose included; crane, wrecking ball, rider's horns and dust not)
 const ZONE_TAGS={stink:'gas',smoke:'gas'}; // what an airlock vent clears (gas and fire). Tag new lingering effects here.
 function volleyStop(s,x){ // where an arrow lands: each platform under it is a coin flip (stop / carry on through), the ground always stops it
   const ys=PLATS.filter(p=>x>=p.x&&x<=p.x+p.w).map(p=>p.y).sort((a,b)=>a-b);for(const y of ys)if(rngNext(s)<VOLLEY.platStop)return y;return floorY(x)}
@@ -602,7 +619,7 @@ function doorBetween(s,x1,x2){if(!STAGE.walls)return false;for(const w of STAGE.
 function roomOf(x){const R=STAGE.rooms;if(!R)return-1;for(let i=0;i<R.length;i++)if(x>=R[i][0]&&x<R[i][1])return i;return-1}
 const BOULDER={every:1200,vary:180,warn:70,fall:20,w:100,dmg:120}; // every ~12s (+/-3s) a hill giant's boulder lands on a random spot ~2 fighters wide
 function hazardReset(s){const h=s.hz||(s.hz={});
-  if(STAGE.hazard==='volley'||STAGE.hazard==='vent'||STAGE.hazard==='bloatfly'){const H=STAGE.hazard==='volley'?VOLLEY:STAGE.hazard==='vent'?VENT:BLOATFLY;
+  if(STAGE.hazard==='volley'||STAGE.hazard==='vent'||STAGE.hazard==='bloatfly'||STAGE.hazard==='machines'){const H=STAGE.hazard==='volley'?VOLLEY:STAGE.hazard==='vent'?VENT:STAGE.hazard==='machines'?MACHINES:BLOATFLY;h.m=null;
     h.t=H.every+Math.floor((rngNext(s)*2-1)*H.vary);h.warn=0;h.act=0;if(!h.arrows){h.arrows=[];h.fires=[];h.door=[1,1];h.lock=-1;h.fly=null}return}if(STAGE.hazard==='wind'){if(h.w===undefined){h.w=0;h.wt=0;h.g=0}h.t=h.g?WIND.gust+Math.floor(rngNext(s)*WIND.gustVar):WIND.calm+Math.floor(rngNext(s)*WIND.calmVar);return}const H=STAGE.hazard==='unda'?UNDA:STAGE.hazard==='boulder'?BOULDER:null;
   h.t=H?H.every+Math.floor((rngNext(s)*2-1)*H.vary):0;h.warn=0;h.act=0;h.hit=[0,0]}
 function boulderStep(s){const h=s.hz,B=BOULDER;
@@ -614,7 +631,7 @@ function boulderStep(s){const h=s.hz,B=BOULDER;
   if(--h.t<=0){h.x=WALL_L+70+Math.floor(rngNext(s)*(WALL_R-WALL_L-140));h.warn=B.warn;say(s,h.x,FLOOR-150,'INCOMING!','#ffb04a',26)}}
 function volleyStep(s){const h=s.hz,V=VOLLEY;
   for(const a of h.arrows){if(a.d>0){a.d--;continue}a.x+=a.vx;a.y+=a.vy; // arrows in flight: hit people, stop on the first surface (platforms protect you)
-    for(const f of s.f){if(a.dead||f.st==='ko')continue;if(ov([a.x-6,a.y-8,12,16],hurt(f))){a.dead=1;s.fx.push({k:'arrowhit',x:a.x,y:a.y,life:16,t:0});hitF(s,null,f,{dmg:V.dmg,kb:[Math.sign(a.vx)*4,-3],hs:14,src:'hazard',type:'Fire'})}}
+    for(const f of s.f){if(a.dead||f.st==='ko')continue;if(hitsF([a.x-6,a.y-8,12,16],f)){a.dead=1;s.fx.push({k:'arrowhit',x:a.x,y:a.y,life:16,t:0});hitF(s,null,f,{dmg:V.dmg,kb:[Math.sign(a.vx)*4,-3],hs:14,src:'hazard',type:'Fire'})}}
     if(!a.dead&&a.y>=a.stop){a.dead=1;h.fires.push({x:a.x,y:a.stop,t:V.fire,s:a.vx<0?-1:1})}}
   h.arrows=h.arrows.filter(a=>!a.dead);
   const burnt=[0,0];for(const p of h.fires){p.t--; // flames where they landed
@@ -640,15 +657,26 @@ function flyStep(s){const h=s.hz,B=BLOATFLY;
   if(h.fly){const z=h.fly;z.t++;
     if(!z.leave){let tg=null,bd=1e9;for(const f of s.f){if(f.st==='ko')continue;const d=Math.hypot(f.x-z.x,f.y-50-z.y);if(d<bd){bd=d;tg=f}}
       if(tg){const dx=tg.x-z.x,dy=tg.y-CH[tg.c].h*0.6-z.y,d=Math.hypot(dx,dy)||1;z.vx+=(dx/d*B.spd-z.vx)*0.08;z.vy+=(dy/d*B.spd-z.vy)*0.08;
-        if(ov([z.x-16,z.y-14,32,28],hurt(tg))){hitF(s,null,tg,{dmg:B.dmg,kb:[dx>0?5:-5,-4],hs:20,src:'hazard',type:'Poison'});z.leave=1;say(s,z.x,z.y-30,'BZZT!','#c8b02a',22)}}
+        if(hitsF([z.x-16,z.y-14,32,28],tg)){hitF(s,null,tg,{dmg:B.dmg,kb:[dx>0?5:-5,-4],hs:20,src:'hazard',type:'Poison'});z.leave=1;say(s,z.x,z.y-30,'BZZT!','#c8b02a',22)}}
       if(z.t>B.life)z.leave=1}
     else{z.vx+=(z.side*4-z.vx)*0.05;z.vy+=(-3-z.vy)*0.05}
     z.x+=z.vx;z.y+=z.vy+Math.sin(z.t*0.2)*0.6;
-    for(const f of s.f){let m=null;if(f.st==='atk'){const mm=CH[f.c].moves[f.mv];if(mm.wins.some(([q,r])=>f.mf>=q&&f.mf<r))m=mm}if(m&&m.dmg&&ov(hbox(f,m.box),[z.x-16,z.y-14,32,28])){h.fly=null;s.fx.push({k:'bfsplat',x:z.x,y:z.y,col:'#c8b02a',life:24,t:0,big:true});say(s,z.x,z.y-20,'SPLAT!','#c8b02a',24);return}}
+    for(const f of s.f){let m=null;if(f.st==='atk'){const mm=CH[f.c].moves[f.mv];if(mm.wins.some(([q,r])=>f.mf>=q&&f.mf<r))m=mm}if(m&&m.dmg&&ov(hbox(f,atkBox(f,m)),[z.x-16,z.y-14,32,28])){h.fly=null;s.fx.push({k:'bfsplat',x:z.x,y:z.y,col:'#c8b02a',life:24,t:0,big:true});say(s,z.x,z.y-20,'SPLAT!','#c8b02a',24);return}}
     for(const p of s.proj)if(p.life>0&&!p.noHit&&ov([p.x-p.w/2,p.y-p.h/2,p.w,p.h],[z.x-16,z.y-14,32,28])){p.life=0;h.fly=null;s.fx.push({k:'bfsplat',x:z.x,y:z.y,col:'#c8b02a',life:24,t:0,big:true});return}
     if(z.leave&&(z.x<-60||z.x>W+60||z.y<-60))h.fly=null;return}
   if(--h.t<=0){const side=rngNext(s)<0.5?-1:1;h.fly={x:side<0?-40:W+40,y:140+rngNext(s)*120,vx:0,vy:0,t:0,leave:0,side};hazardReset(s);say(s,side<0?120:W-120,110,'BZZZZ...','#c8b02a',22)}}
+function machineStep(s){const h=s.hz,M=MACHINES; // Avernus war machines: warning, then one drives across the ground lane, hitting each fighter once
+  if(h.m){const m=h.m,T=M.types[m.k];m.x+=m.dir*T.spd;m.t++;
+    const box=[m.x-T.w/2,FLOOR-T.h,T.w,T.h];
+    for(const f of s.f){if(m.hit[f.i]||f.st==='ko')continue;if(hitsF(box,f)){m.hit[f.i]=1;
+      if(hitF(s,null,f,{dmg:T.dmg,kb:T.kb,dir:m.dir,hs:26,launch:true,unb:true,src:'hazard',type:'Physical'})){s.shake=Math.max(s.shake,12);say(s,f.x,f.y-130,'ROADKILL!','#ff7a3a',30);s.fx.push({k:'spark',x:f.x,y:f.y-40,col:'#ffd34d',life:16,t:0,big:true})}}}
+    if(m.t%5===0)s.fx.push({k:'dust',x:m.x-m.dir*T.w*0.45,y:FLOOR,life:20,t:0}); // dust kicked up behind it
+    for(const b of STAGE.blocks||[])if(Math.abs(m.x+m.dir*T.w/2-(b.x0+b.x1)/2)<T.spd/2+1){s.shake=Math.max(s.shake,6);s.fx.push({k:'dust',x:(b.x0+b.x1)/2,y:b.top,life:22,t:0})} // ramming through a boulder
+    if(m.dir>0?m.x-T.w/2>W+20:m.x+T.w/2<-20){h.m=null;hazardReset(s)}return}
+  if(h.warn>0){if(--h.warn===0){const T=M.types[h.k];h.m={k:h.k,dir:h.dir,x:h.dir>0?-T.w/2-10:W+T.w/2+10,t:0,hit:[0,0]}}return}
+  if(--h.t<=0){h.k=Math.floor(rngNext(s)*M.types.length);h.dir=rngNext(s)<0.5?1:-1;h.warn=M.warn;say(s,h.dir>0?150:W-150,FLOOR-170,M.types[h.k].name,'#ff7a3a',26)}}
 function hazardStep(s){
+  if(STAGE.hazard==='machines')machineStep(s);
   if(STAGE.hazard==='volley')volleyStep(s);else if(STAGE.hazard==='vent')ventStep(s);else if(STAGE.hazard==='bloatfly')flyStep(s);
   const P=STAGE.pit;
   if(P)for(const f of s.f){ // the vortex churns anyone in it: slow, and steady damage
@@ -679,7 +707,12 @@ function resetRound(s){s.brkRound=false;
 }
 
 /* ---------- geometry ---------- */
-function hurt(f){const c=CH[f.c];return[f.x-c.w/2,f.y-c.h,c.w,c.h]}
+function hurtAll(f){if(!(f.dragon>0&&CH[f.c].id==='soren'))return[hurt0(f)];const dy=f.ground?0:DRAGON_AIR_Y;return DRAGON_HURT.map(b=>f.face>0?[f.x+b[0],f.y+b[1]+dy,b[2],b[3]]:[f.x-b[0]-b[2],f.y+b[1]+dy,b[2],b[3]])} // every box you can be hit on
+function hurt0(f){const c=CH[f.c];return[f.x-c.w/2,f.y-c.h,c.w,c.h]}
+function hurt(f){const L=hurtAll(f);if(L.length===1)return L[0];let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const r of L){x0=Math.min(x0,r[0]);y0=Math.min(y0,r[1]);x1=Math.max(x1,r[0]+r[2]);y1=Math.max(y1,r[1]+r[3])}return[x0,y0,x1-x0,y1-y0]} // one box around them all (used by big area checks)
+function hitsF(r,f){return hurtAll(f).some(h=>ov(r,h))} // does rectangle r touch any of f's hurtboxes
+function extents(f){if(!(f.dragon>0&&CH[f.c].id==='soren')){const hw=CH[f.c].w/2;return[hw,hw]}const B=DRAGON_HURT[0];return f.face>0?[-B[0],B[0]+B[2]]:[B[0]+B[2],-B[0]]} // how far a fighter's body reaches [left, right] of f.x, for pushing apart
+function atkBox(f,m){return f.dragon>0&&CH[f.c].id==='soren'&&DRAGON_BOX[f.mv]||m.box} // dragon-sized normals
 function hbox(f,b){return f.face>0?[f.x+b[0],f.y+b[1],b[2],b[3]]:[f.x-b[0]-b[2],f.y+b[1],b[2],b[3]]}
 function ov(a,b){return a[0]<b[0]+b[2]&&a[0]+a[2]>b[0]&&a[1]<b[1]+b[3]&&a[1]+a[3]>b[1]}
 function onPlat(f){if(!f.ground||f.y>=floorY(f.x)-2)return false; // standing on a drop-through platform (not the floor, not a solid log)
@@ -782,6 +815,7 @@ function hitF(s,a,d,o){
     d.armor=0;say(s,d.x,d.y-110,'ARMOR BROKEN!','#ff8a3d',28);s.fx.push({k:'ring',x:d.x,y:d.y-50,life:16,t:0,col:'#cfd6e0',small:true})}
   if(a&&a!==d){a.combo=(d.st==='hit'||d.st==='grabbed')?a.combo+1:1;if(a.combo>=3)say(s,a.x,a.y-140,a.combo+' HITS','#ffd34d',24);if(s.stats){const st=s.stats[a.i];st.hits=(st.hits||0)+1;st.combo=Math.max(st.combo||0,a.combo)}}
   if(d.st==='grabbed')return true;
+  if(d.dragon>0&&!o.unb&&(dealt<DRAGON_NOFLINCH||rngNext(s)<DRAGON_NOFLINCH_P)){if(dealt>=DRAGON_NOFLINCH)say(s,d.x,d.y-150,'UNFAZED','#dfe9ff',20);return true} // Silver Dragon: takes the damage, shrugs off the flinch
   if(d.steady>0&&STEADY_MODE==='B'){say(s,d.x,d.y-100,'STEADY','#f2b134',18);return true} // after a union break (B): takes the damage, doesn't flinch
   const w=CH[d.c].weight;
   d.st='hit';d.t=0;d.mv=null;d.hst=o.hs;d.counter=0;
@@ -819,7 +853,7 @@ function tickMove(s,f){
   if(m.dmg||m.grab){
     m.wins.forEach(([a,b],wi)=>{
       if(fr<a||fr>=b||(f.hitMask&(1<<wi)))return;
-      if(!ov(hbox(f,m.box),hurt(d)))return;
+      if(!hitsF(hbox(f,atkBox(f,m)),d))return;
       if(m.grab){
         if(f.md.dash)return; // a dash, not a grab
         if(!d.ground||d.st==='ko'||d.inv>0||d.st==='grabbed')return;
@@ -867,11 +901,12 @@ function control(s,f,inp){
     const sn=STAGE.snow&&f.y>=floorY(f.x)-2?STAGE.snow:null; // deep snow: a bit slower, and you slide when starting/stopping/turning
     const wd=STAGE.water&&f.x>STAGE.water.x0&&f.x<STAGE.water.x1?STAGE.water.spd:1;
     const tv=dir*spd*(sn?sn.spd:1)*wd,nv=sn?f.vx+(tv-f.vx)*sn.grip:tv;
-    if(pr&K.U){f.vy=c.jump;f.ground=false;f.st='jump';f.jumps=1;f.vx=nv;return}
+    if(pr&K.U){f.vy=c.jump*(f.dragon>0?DRAGON_JUMP:1);f.ground=false;f.st='jump';f.jumps=1;f.vx=nv;return}
     f.vx=nv;f.st=dir?'walk':(sn&&Math.abs(f.vx)>0.6?'walk':'idle');
   }else{
-    if((pr&K.U)&&f.jumps<2){f.vy=c.jump*0.85;f.jumps=2;s.fx.push({k:'ring',x:f.x,y:f.y,life:14,t:0,col:'#ffffff88',small:1})}
-    f.vx+=(dir*spd-f.vx)*0.18;
+    if((pr&K.U)&&f.jumps<2){f.vy=c.jump*0.85*(f.dragon>0?DRAGON_JUMP:1);f.jumps=2;s.fx.push({k:'ring',x:f.x,y:f.y,life:14,t:0,col:'#ffffff88',small:1})}
+    const gl=f.dragon>0&&c.id==='soren'&&(inp&K.U)&&f.vy>=GLIDE_VY-0.01?DRAGON_GLIDE:1; // gliding dragon: faster through the air
+    f.vx+=(dir*spd*gl-f.vx)*0.18;
     f.st='jump';
   }
 }
@@ -882,7 +917,7 @@ function phys(s,f){
   if(f.st==='grabbed'){const g=s.f[1-f.i];f.x=g.x+g.face*(CH[g.c].w/2+c.w/2-12);f.y=g.y;f.vx=f.vy=0;f.ground=true;return}
   if(f.st==='grind'){f.vx=0}
   const lowG=STAGE.lowGrav&&roomOf(f.x)>=0; // the ship's airlock rooms: low gravity, floaty jumps
-  f.vy=Math.min(lowG?9:16,f.vy+GRAV*(lowG?LOW_GRAV:1));
+  f.vy=Math.min(lowG?9:16,f.vy+GRAV*(lowG?LOW_GRAV:(STAGE.grav||1)));
   if(CH[f.c].id==='soren'&&!f.ground&&f.vy>GLIDE_VY&&(f.prev&K.U)&&(f.st==='jump'||f.st==='idle'||f.st==='walk'))f.vy=GLIDE_VY; // Silver Wings: hold Jump to glide
   if(lowG&&STAGE.softCeil){const sc=STAGE.softCeil,head=f.y-c.h;if(head<sc.y)f.vy+=sc.push*Math.min(1,(sc.y-head)/(sc.y-(STAGE.ceil||0)))} // soft push down near the roof: stronger the higher you are
   const py=f.y,px0=f.x;f.x+=f.vx;f.y+=f.vy;
@@ -922,9 +957,9 @@ function separate(s){
   if((a.st==='atk'&&a.md&&a.md.drag>=0)||(b.st==='atk'&&b.md&&b.md.drag>=0))return; // Pain Train carries them: don't shove the train back
   const ra=hurt(a),rb=hurt(b);
   if(!(ra[1]<rb[1]+rb[3]&&ra[1]+ra[3]>rb[1]))return;
-  const need=(CH[a.c].w+CH[b.c].w)/2-Math.abs(a.x-b.x);
+  const dir=a.x<b.x||(a.x===b.x&&a.i===0)?-1:1; // -1: a is on the left
+  const ea=extents(a),eb=extents(b),need=(dir<0?ea[1]+eb[0]:ea[0]+eb[1])-Math.abs(a.x-b.x); // the dragon is wide and lopsided (long back, short front)
   if(need<=0)return;
-  const dir=a.x<b.x||(a.x===b.x&&a.i===0)?-1:1;
   a.x+=dir*need/2;b.x-=dir*need/2;
   for(const f of s.f){const hw=CH[f.c].w/2;f.x=Math.max(WALL_L+hw,Math.min(WALL_R-hw,f.x))}
 }
@@ -935,8 +970,9 @@ function tickProj(s){
     p.t++;p.life--;if(p.curveAt&&p.t===p.curveAt)p.g=p.g2;p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;
     if(p.betrayAt&&p.t===p.betrayAt){p.vx=-p.vx*1.2;p.bad=1;say(s,p.x,p.y-40,'...UH OH','#ff6a5a',24)}
     const owner=s.f[p.o],tgt=p.bad?owner:s.f[1-p.o];
-    if(p.life>0&&!p.noHit&&p.miss!==tgt.i&&ov([p.x-p.w/2,p.y-p.h/2,p.w,p.h],hurt(tgt))){
-      if(hitF(s,p.bad?null:owner,tgt,{dmg:p.dmg*CH[owner.c].pow*(p.falloff?Math.max(0.4,1-p.t*Math.abs(p.vx)/600):1),kb:p.kb,hs:p.hs,launch:p.launch,unb:p.unb,dir:p.vx>=0?1:-1,src:p.src,shieldMul:p.shieldMul||(p.kind==='bullet'?0.5:1)})){p.life=0;if(p.grp)for(const q of s.proj)if(q.grp===p.grp)q.noHit=1;if(p.kind==='deer')s.fx.push({k:'cdpoof',x:p.x,y:p.y+34+(p.n%2)*16,dir:Math.sign(p.vx)||1,red:p.n===0,life:24,t:0});if(p.kind==='shiplaser')s.fx.push({k:'olhit',x:p.x,y:p.y,life:16,t:0});if(p.kind==='plasma')s.fx.push({k:'hrplasma',x:p.x,y:p.y,life:18,t:0});
+    if(p.life>0&&!p.noHit&&p.miss!==tgt.i&&hitsF([p.x-p.w/2,p.y-p.h/2,p.w,p.h],tgt)){
+      if(hitF(s,p.bad?null:owner,tgt,{dmg:p.dmg*CH[owner.c].pow*(p.falloff?Math.max(0.4,1-p.t*Math.abs(p.vx)/600):1),kb:p.mush&&p.gh>=2?MUSH.kb3:p.kb,hs:p.mush&&p.gh>=2?MUSH.hs3:p.hs,launch:p.launch,unb:p.unb,dir:p.vx>=0?1:-1,src:p.src,shieldMul:p.shieldMul||(p.kind==='bullet'?0.5:1)})){if(p.kind==='frost'){p.fadeA=Math.max(0,Math.min(1,1.6-1.6*p.t/(p.life+2)));p.fadeF=Math.min(5,Math.floor(p.t/p.life*7));p.noHit=1;p.life=p.fadeLen=FROST_FADE;p.vx*=0.3;p.vy*=0.3}else p.life=0; // frost puffs that land lose their hitbox and fade out instead of vanishing
+        if(p.grp&&!p.mush)for(const q of s.proj)if(q.grp===p.grp)q.noHit=1;if(p.mush)for(const q of s.proj)if(q.grp===p.grp)q.gh++;if(p.kind==='deer')s.fx.push({k:'cdpoof',x:p.x,y:p.y+34+(p.n%2)*16,dir:Math.sign(p.vx)||1,red:p.n===0,life:24,t:0});if(p.kind==='shiplaser')s.fx.push({k:'olhit',x:p.x,y:p.y,life:16,t:0});if(p.kind==='plasma')s.fx.push({k:'hrplasma',x:p.x,y:p.y,life:18,t:0});
         if(p.onHit&&(tgt.st==='hit'||tgt.st==='down'||tgt.shrugT===s.frame||(p.pierce&&(tgt.st==='bstun'||tgt.st==='stun'))))p.onHit(s,owner,tgt,p)}
       else if(tgt.missed===s.frame)p.miss=tgt.i;
     }
@@ -947,7 +983,7 @@ function tickProj(s){
     if(STAGE.walls&&p.life>0&&p.kind!=='shiplaser')for(const w of STAGE.walls)if(w.door!==undefined&&doorClosed(s,w.door)&&(p.x-p.vx-w.x)*(p.x-w.x)<=0&&p.y>w.y0&&p.y<w.y1){p.life=0;s.fx.push({k:'spark',x:w.x,y:p.y,col:'#cfd6e0',life:10,t:0})}
     if(p.t===1&&p.kind==='bullet')s.fx.push({k:'smuzzle',x:p.x,y:p.y,life:10,t:0,dir:Math.sign(p.vx)||1});
     if(p.life<=0&&p.kind==='bullet'&&p.x>0&&p.x<W)s.fx.push({k:'simpact',x:p.x,y:p.y,life:14,t:0,dir:Math.sign(p.vx)||1});
-    if(p.life<=0&&p.kind==='wave')s.fx.push({k:'swfade',x:p.x,y:p.y,life:24,t:0,dir:Math.sign(p.vx)||1});
+    if(p.life<=0&&p.kind==='wave')s.fx.push({k:'swfade',x:p.x,y:p.y,sc:p.sc,life:24,t:0,dir:Math.sign(p.vx)||1});
     if(p.life<=0&&p.kind==='pamph')s.fx.push({k:'pburst',x:p.x,y:Math.min(p.y,FLOOR-14),life:18,t:0});
   }
   s.proj=s.proj.filter(p=>p.life>0);
@@ -955,7 +991,7 @@ function tickProj(s){
     const owner=s.f[z.o],tgt=s.f[1-z.o];
     if(z.k==='stink'){
       z.life--;z.tk++;
-      if(ov([z.x-z.w/2,z.y-z.h,z.w,z.h],hurt(tgt))&&tgt.st!=='ko'&&!doorBetween(s,z.x,tgt.x)){tgt.slow=Math.max(tgt.slow,12);if(z.tk%30===0&&s.phase==='fight'){deal(s,owner,tgt,12,'s2');s.fx.push({k:'spark',x:tgt.x,y:tgt.y-70,col:'#9bd35a',life:10,t:0})}}
+      if(hitsF([z.x-z.w/2,z.y-z.h,z.w,z.h],tgt)&&tgt.st!=='ko'&&!doorBetween(s,z.x,tgt.x)){tgt.slow=Math.max(tgt.slow,12);if(z.tk%30===0&&s.phase==='fight'){deal(s,owner,tgt,12,'s2');s.fx.push({k:'spark',x:tgt.x,y:tgt.y-70,col:'#9bd35a',life:10,t:0})}}
     }else if(z.k==='demon'){
       z.t++;z.life--;if(z.swipe>0)z.swipe--;if(z.cd>0)z.cd--;if(z.drop>0)z.drop--;
       if(z.betray&&z.t===z.betray){z.bad=1;say(s,z.x,z.y-90,'...UH OH','#ff6a5a',26)}
@@ -985,7 +1021,7 @@ function tickProj(s){
     }else if(z.k==='pattern'){
       if(z.delay>0){z.delay--;if(z.delay===0){s.shake=10;s.fx.push({k:'ring',x:z.x,y:z.y+55,life:20,t:0,col:'#e98bff'})}continue}
       z.life--;
-      if(z.life>=30&&!z.hit&&tgt.st!=='ko'&&ov([z.x-z.w/2,z.y-z.h/2,z.w,z.h],hurt(tgt))){z.hit=1;
+      if(z.life>=30&&!z.hit&&tgt.st!=='ko'&&hitsF([z.x-z.w/2,z.y-z.h/2,z.w,z.h],tgt)){z.hit=1;
         if(hitF(s,owner,tgt,{dmg:z.dmg,kb:[tgt.x>=owner.x?4:-4,-4],hs:34,unb:true,dir:tgt.x>=owner.x?1:-1,src:'su'})&&tgt.st!=='ko'){tgt.muddle=300;say(s,tgt.x,tgt.y-120,'MUDDLED!','#e98bff',38)}}
     }else if(z.k==='guard'){
       z.life--;z.tk++;z.x=owner.x;z.y=owner.y-40;
@@ -1005,7 +1041,7 @@ function tickProj(s){
       if(z.n>=3||owner.st==='ko')z.life=Math.min(z.life,12);
     }else if(z.k==='smoke'){ // Owen's smoke: slows and muddles anyone inside
       z.life--;z.tk++;
-      if(tgt.st!=='ko'&&ov([z.x-z.w/2,z.y-z.h,z.w,z.h],hurt(tgt))&&!doorBetween(s,z.x,tgt.x))tgt.slow=Math.max(tgt.slow,12);
+      if(tgt.st!=='ko'&&hitsF([z.x-z.w/2,z.y-z.h,z.w,z.h],tgt)&&!doorBetween(s,z.x,tgt.x))tgt.slow=Math.max(tgt.slow,12);
     }else if(z.k==='totem'){ // Big Chief's spirit totem: heals him while he stays near it
       z.life--;z.tk++;
       const near=owner.st!=='ko'&&Math.abs(owner.x-z.x)<z.r&&Math.abs(owner.y-z.y)<120&&!doorBetween(s,z.x,owner.x); // no slow or damage on enemies, whichever form
@@ -1016,13 +1052,13 @@ function tickProj(s){
       if(owner.st==='ko')z.life=0;
     }else if(z.k==='strike'){ // General Strike: a picket line of elves marches across the arena
       z.life--;z.tk++;z.x+=z.vx;if(z.cd>0)z.cd--;
-      if(z.cd<=0&&z.n<STRIKE_HITS&&tgt.st!=='ko'&&!doorBetween(s,z.x,tgt.x)&&ov([z.x-z.w/2,FLOOR-150,z.w,150],hurt(tgt))){z.cd=14;z.n++;
+      if(z.cd<=0&&z.n<STRIKE_HITS&&tgt.st!=='ko'&&!doorBetween(s,z.x,tgt.x)&&hitsF([z.x-z.w/2,FLOOR-150,z.w,150],tgt)){z.cd=14;z.n++;
         hitF(s,owner,tgt,{dmg:STRIKE_DMG*CH[owner.c].pow,kb:[z.vx>0?6:-6,z.n>=STRIKE_HITS?-9:-2],hs:16,launch:z.n>=STRIKE_HITS,unb:true,dir:z.vx>0?1:-1,src:'su'})}
       if(z.x<-120||z.x>W+120)z.life=0;
     }else if(z.k==='pillar'){
       if(z.delay>0)z.delay--;else{
         z.act--;
-        if(!z.hit&&ov([z.x-z.w/2,0,z.w,FLOOR],hurt(tgt))){z.hit=1;hitF(s,owner,tgt,{dmg:z.dmg,kb:[tgt.x>=z.x?8:-8,-15],hs:44,launch:true,unb:true,dir:tgt.x>=z.x?1:-1,src:'su'})}
+        if(!z.hit&&hitsF([z.x-z.w/2,0,z.w,FLOOR],tgt)){z.hit=1;hitF(s,owner,tgt,{dmg:z.dmg,kb:[tgt.x>=z.x?8:-8,-15],hs:44,launch:true,unb:true,dir:tgt.x>=z.x?1:-1,src:'su'})}
         if(z.act<=0){z.life=0;s.fx.push({k:'pfade',x:z.x,life:18,t:0})}
       }
       if(z.life===undefined)z.life=1;
@@ -1125,7 +1161,7 @@ function step(s,inputs){
    LINKS (worked out automatically) says which surfaces you can jump, drop or walk between. */
 let SURF=[],LINKS=[];
 function setStage(i){
-  STAGE=STAGES[i]||STAGES[0];
+  STAGE=STAGES[i]||STAGES[0];FLOOR=STAGE.floorY||BASE_FLOOR;
   if(STAGE.blocks)for(const b of STAGE.blocks)b.top=Math.round(floorY((b.x0+b.x1)/2)-b.h);
   PLATS=STAGE.plats.concat((STAGE.blocks||[]).map(b=>({x:b.x0,y:b.top,w:b.x1-b.x0,solid:1})));
   SURF=STAGE.floor.map(([x0,x1])=>({x:x0,w:x1-x0,y:FLOOR,floor:1})).concat(PLATS.map(p=>({x:p.x,w:p.w,y:p.y,solid:p.solid})));
@@ -1170,12 +1206,21 @@ function cpuInput(s,i,diff,mem){ // free facing: when the CPU attacks, blocks or
   if(!(o&(K.LP|K.HP|K.S1|K.S2|K.SU|K.B))||(o&K.U)||me.st==='ko'||d.st==='ko')return o;
   if(Math.abs(d.x-me.x)<4)return o;
   return(o&~(K.L|K.R))|(d.x>me.x?K.R:K.L)}
+function riseFrames(v,h){let y=0;for(let n=1;n<40;n++){v+=GRAV;y-=v;if(y>=h||v>=0)return n}return 40} // frames for a jump of speed v to rise h (or to reach its top)
 function cpuStage(s,i,diff,mem){ // stage awareness wrapped around the fighting brain: get out of the vortex, don't wander in
   const o=cpuBrain(s,i,diff,mem),P=STAGE.pit,me=s.f[i],hw=CH[me.c].w/2,free=['idle','walk','block'].includes(me.st);
   if(STAGE.hazard==='boulder'&&s.hz&&s.hz.warn>0&&me.st!=='ko'){const h=s.hz,react={easy:45,normal:24,hard:12}[diff]||24; // see the shadow, get out from under it
     if(BOULDER.warn-h.warn>=react){const dx=me.x-h.x,zone=BOULDER.w/2+hw+14;
       if(Math.abs(dx)<zone){let away=dx<0?-1:1;if((away<0&&h.x-zone<WALL_L+20)||(away>0&&h.x+zone>WALL_R-20))away=-away;return(o&~(K.L|K.R|K.U|K.B))|(away<0?K.L:K.R)}
       const into=(o&K.R)&&dx<0&&-dx<zone+30||(o&K.L)&&dx>0&&dx<zone+30;if(into)return o&~(K.L|K.R)}} // don't walk into it either
+  if(STAGE.hazard==='machines'&&s.hz&&s.hz.m&&me.st!=='ko'){const m=s.hz.m,T=MACHINES.types[m.k],hb=hurt(me),front=m.x+m.dir*T.w/2,dist=m.dir>0?hb[0]-front:front-(hb[0]+hb[2]),tap=(me.prev&K.U)?0:K.U; // a war machine coming: stay up high, or jump it (dist = gap between its front and my nearest hurtbox edge)
+    if(dist>-T.w-2*hw){
+      if(me.ground&&me.y<=FLOOR-T.h-4)return o&~K.D; // safe up on a hill: don't drop into its path
+      const lead=Math.max(1,riseFrames(CH[me.c].jump,T.h+8)+({easy:-3,normal:0,hard:1}[diff]||0)); // frames my jump needs to clear its roof
+      const ATK=K.LP|K.HP|K.S1|K.S2|K.SU;
+      if(me.ground&&dist<=T.spd*lead)return(o&~(K.D|K.B|K.L|K.R|ATK))|tap; // jump as it arrives
+      if(me.ground&&dist<=T.spd*(lead+40))return o&~(ATK|K.D); // don't start an attack you can't jump out of
+      if(!me.ground){const ox=o&~(ATK|K.D|K.B);return(me.jumps<2&&T.h>70&&me.vy>-2&&dist<T.spd*18)?ox|tap:ox}}} // in the air: no attacks while it passes; tall ones get the double jump at the top
   if(STAGE.hazard==='volley'&&s.hz&&(s.hz.warn>0||s.hz.arrows.length)&&me.st!=='ko'&&free){const h=s.hz,react={easy:50,normal:28,hard:14}[diff]||28; // leave the target area (cover only stops half the arrows)
     const sheltered=false;
     if((h.warn===0||VOLLEY.warn-h.warn>=react)&&me.x>h.x0-hw&&me.x<h.x1+hw&&!sheltered){let goL=me.x-h.x0<h.x1-me.x;if(goL&&h.x0<=WALL_L+5)goL=false;if(!goL&&h.x1>=WALL_R-5)goL=true;return(o&~(K.L|K.R|K.U|K.B))|(goL?K.L:K.R)}}
@@ -1229,8 +1274,8 @@ function cpuBrain(s,i,diff,mem){
   const curious=k=>(1+1.2*Math.sqrt(Math.log(totU+1)/mem.L[k].u))*(mem.L[k].u<4?2:1);
   const mult=k=>Math.min(5,Math.max(0.2,Math.pow(val(k)/avgV,1.5*D.adapt)*curious(k)));
   const pick=opts=>{let tot=0;for(const q of opts)tot+=q[2]*mult(q[0]);let r=rnd()*tot;for(const q of opts){r-=q[2]*mult(q[0]);if(r<=0){mem.L[q[0]].u++;return q[1]}}return 0};
-  const dx=d.x-me.x,dist=Math.abs(dx),to=dx>0?K.R:K.L,away=dx>0?K.L:K.R;
-  const threat=(d.st==='atk'&&dist<190)||s.proj.some(p=>p.o!==i&&Math.abs(p.x-me.x)<160&&Math.sign(p.vx)===Math.sign(me.x-p.x));
+  const dx=d.x-me.x,to=dx>0?K.R:K.L,away=dx>0?K.L:K.R,dist=Math.abs(dx)-Math.max(0,extents(d)[dx>0?0:1]-CH[d.c].w/2)-Math.max(0,extents(me)[dx>0?1:0]-CH[me.c].w/2); // gap-aware: a big dragon is closer than his centre
+  const threat=(d.st==='atk'&&dist<190)||s.proj.some(p=>p.o!==i&&!p.fadeLen&&Math.abs(p.x-me.x)<160&&Math.sign(p.vx)===Math.sign(me.x-p.x));
   let o=0;
   const zoner=c.role==='Zoner'||(c.id==='feng'&&CH[d.c].role!=='Zoner'),want=zoner?330:c.role==='Grappler'?60:90;
   if(d.st==='stun'&&dist<140)o=me.meter>=METER?K.SU:(rnd()<0.5?K.HP:K.LP)|to;
@@ -1601,6 +1646,26 @@ function drawHRFx(f,c){drawTeddFx(f,c);drawBofFx(f,c);drawHugFx(f);if(c.id!=='he
     if(im)fxCell(im,(Math.floor((S?S.frame:0)/3)%6)*240,240,240,240,-d/2,-d/2,d,d);
     else{g.fillStyle='#ffd34d';for(const sx of[-6,6]){g.beginPath();g.moveTo(sx-4,0);g.lineTo(sx+4,0);g.lineTo(sx,24+((S?S.frame:0)%3)*4);g.fill()}}
     g.restore()}} // painted hazard sheets: game units per sheet pixel (bloatfly cells 256, arrow cells 200)
+function drawMachines(){ // Avernus: the warning (flashing chevrons + lane glow on the side it comes from), then the war machine (sprite strips; the code-drawn version is the fallback)
+  if(!S||STAGE.hazard!=='machines'||!S.hz)return;const h=S.hz,t=S.frame,M=MACHINES;g.save();
+  if(h.warn>0){const T=M.types[h.k],k=1-h.warn/M.warn,on=(t>>3)%2===0,ex=h.dir>0?WALL_L:WALL_R;
+    const gr=g.createLinearGradient(ex,0,ex+h.dir*W*0.9,0);gr.addColorStop(0,'rgba(255,210,70,'+(0.22+0.28*k)+')');gr.addColorStop(1,'rgba(255,210,70,0)');g.fillStyle=gr;g.fillRect(0,FLOOR-T.h,W,T.h);
+    {g.globalAlpha=on?1:0.4;g.fillStyle='#ffd24a';g.strokeStyle='#2a0a04';g.lineWidth=3;for(let n=0;n<3;n++){const x=ex+h.dir*(18+n*26+k*30),y=FLOOR-T.h/2;g.beginPath();g.moveTo(x,y-18);g.lineTo(x+h.dir*16,y);g.lineTo(x,y+18);g.lineTo(x+h.dir*-6,y+18);g.lineTo(x+h.dir*10,y);g.lineTo(x+h.dir*-6,y-18);g.closePath();g.stroke();g.fill()}g.globalAlpha=1}
+    g.globalAlpha=0.5*k;g.fillStyle='#3a2a22';for(let n=0;n<4;n++){g.beginPath();g.arc(ex+h.dir*(n*14),FLOOR-8-n*6-Math.sin(t*0.3+n)*4,10+n*5,0,7);g.fill()}}
+  if(h.m&&M.types[h.m.k].art&&fxOn(M.types[h.m.k].art.fx)){const m=h.m,T=M.types[m.k],A=T.art,im=fxOn(A.fx),fi=Math.floor(m.t/3)%A.n; // the sprite: drawn facing left, mirrored when it drives right
+    g.translate(m.x,FLOOR);g.scale(-m.dir,1);g.drawImage(im,fi*A.fw,0,A.fw,A.fh,-T.w/2-A.gx0*A.k/2,-A.gy*A.k/2,A.fw/2,A.fh/2);g.restore();return}
+  if(h.m){const m=h.m,T=M.types[m.k],w=T.w,hh=T.h;g.translate(m.x,FLOOR);g.scale(m.dir,1); // fallback: drawn in code
+    const R=m.k===0?16:m.k===1?24:30,spin=m.x/R; // saw wheels roll with the ground
+    const wheel=(cx,r)=>{g.save();g.translate(cx,-r);g.rotate(spin);g.fillStyle='#4a3a2e';g.beginPath();for(let a=0;a<16;a++){const q=a/16*Math.PI*2,rr=a%2?r:r*0.82;g.lineTo(Math.cos(q)*rr,Math.sin(q)*rr)}g.closePath();g.fill();g.strokeStyle='#1a120c';g.lineWidth=2;g.stroke();g.fillStyle='#8a6a48';g.beginPath();g.arc(0,0,r*0.35,0,7);g.fill();g.restore()};
+    g.fillStyle='#2a1c16';g.strokeStyle='#120a06';g.lineWidth=2;g.beginPath(); // hull
+    g.moveTo(-w/2,-R*1.1);g.lineTo(-w/2+10,-hh*0.82);g.lineTo(w*0.15,-hh);g.lineTo(w/2-14,-hh*0.7);g.lineTo(w/2,-R*1.2);g.closePath();g.fill();g.stroke();
+    g.fillStyle='#c8b89a';for(let n=0;n<4;n++){const x=-w/2+18+n*(w-36)/4;g.beginPath();g.moveTo(x,-hh*0.84-n*2);g.lineTo(x+6,-hh*0.84-18-n*2);g.lineTo(x+12,-hh*0.84-n*2);g.fill()} // spikes on the back
+    g.fillStyle='#d8ccb0';g.beginPath();g.moveTo(w/2-6,-R*1.6);g.quadraticCurveTo(w/2+30,-R*1.2,w/2+18,-4);g.lineTo(w/2-4,-R*1.1);g.closePath();g.fill(); // ram tusk
+    g.fillStyle=(t>>2)%2?'#ffb040':'#ff6a1a';g.fillRect(-w*0.1,-hh*0.62,w*0.22,6); // furnace glow
+    if(m.k===2){g.strokeStyle='#3a2a1e';g.lineWidth=5;g.beginPath();g.moveTo(-w*0.3,-hh*0.85);g.lineTo(-w*0.55,-hh*1.25);g.stroke()} // the claw crane
+    wheel(-w/2+R+4,R);if(m.k)wheel(0,R*0.9);wheel(w/2-R-4,R);
+    g.fillStyle='rgba(40,30,26,0.6)';for(let n=0;n<3;n++){g.beginPath();g.arc(-w*0.2-n*10,-hh-8-n*10-((t+n*7)%20),6+n*3,0,7);g.fill()}} // exhaust
+  g.restore()}
 function drawBloatfly(){if(!S||STAGE.hazard!=='bloatfly'||!S.hz||!S.hz.fly)return;const z=S.hz.fly,t=S.frame;g.save();g.translate(z.x,z.y);g.scale(z.vx<0?-1:1,1);
   const im=fxOn('bloatfly');if(im){const near=!z.leave&&S.f.some(f=>f.st!=='ko'&&Math.hypot(f.x-z.x,f.y-CH[f.c].h*0.6-z.y)<90),d=256*BF_K;
     const r=z.leave?3:near?1:0,c=r===3?Math.floor(t/4)%4:r===1?Math.min(5,Math.floor(t/3)%8):Math.floor(t/3)%6;
@@ -2157,9 +2222,10 @@ function pixelSprite(f,key){
 }
 /* ---- hand-made sprite sheets (8 columns x 14 rows of 256x272 cells, feet at 128,226, facing right).
    Rows: idle, walk, jump, light, heavy, air light, air heavy, special 1, special 2, super, hit, block, stunned, knocked down. ---- */
-const SHEETS={frica:{src:'frica_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},madog:{src:'madog_sheet.png',frames:[8,8,2,7,8,4,5,8,6,8,2,2,4,1]},feng:{src:'feng_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},dask:{src:'dask_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tenebrund:{src:'tenebrund_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},salty:{src:'salty_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8]},calder:{src:'calder_sheet.png',frames:[7,7,2,6,7,4,5,7,6,7,2,2,4,1]},heavyrail:{src:'heavyrail_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},owen:{src:'owen_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tedd:{src:'tedd_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},bof:{src:'bof_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},chief:{src:'chief_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},soren:{src:'soren_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8]}};
-const SHEET_ROW={l:3,h:4,al:5,ah:6,s1:7,s2:8,su:9,dact:8};
-const FXS={demon:{src:'demon_sheet.png'},static:{src:'static_sheet.png'},madog:{src:'madog_fx.png'},fengsw:{src:'feng_sw.png'},fengpamph:{src:'feng_pamph.png'},fengpillar:{src:'feng_pillar.png'},vortex:{src:'erebus_vortex.png'},gfboulder:{src:'gf_boulder.png'},gfgiant:{src:'gf_giant.png'},unda:{src:'erebus_unda.png'},dask:{src:'dask_fx.png'},ten:{src:'tenebrund_fx.png'},sbul:{src:'salty_bullets.png'},swave:{src:'salty_wave.png'},shipdoor:{src:'ship_door.png'},bloatfly:{src:'tahoe_bloatfly.png'},cproj:{src:'calder_proj.png'},cchem:{src:'calder_chems.png'},hrfx:{src:'hr_fx.png'},hrp:{src:'hr_plasma.png'},oproj:{src:'owen_proj.png'},olaser:{src:'owen_laser.png'},osmoke:{src:'owen_smoke.png'},tfx:{src:'tedd_fx.png'},bfx:{src:'bof_fx.png'},cdeer:{src:'chief_deer.png'},celf:{src:'chief_elves.png'},cfx:{src:'chief_fx.png'},arrows:{src:'vogler_arrows.png'},sdragon:{src:'soren_dragon.png'},sfx:{src:'soren_fx.png'}};
+const SHEETS={frica:{src:'frica_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},madog:{src:'madog_sheet.png',frames:[8,8,2,7,8,4,5,8,6,8,2,2,4,1]},feng:{src:'feng_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},dask:{src:'dask_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tenebrund:{src:'tenebrund_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8]},salty:{src:'salty_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8]},calder:{src:'calder_sheet.png',frames:[7,7,2,6,7,4,5,7,6,7,2,2,4,1]},heavyrail:{src:'heavyrail_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},owen:{src:'owen_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},tedd:{src:'tedd_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8],cell:[512,384,256,330]},bof:{src:'bof_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1]},chief:{src:'chief_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8],breakRow:15},soren:{src:'soren_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8]}};
+const SHEET_ROW={l:3,h:4,al:5,ah:6,s1:7,s2:8,su:9,dact:8}
+const ART_HIT={salty:{l:[3,1],h:[4,2],ah:[2,2]}}; // per fighter and move: [first impact column, how many impact columns] in that move's sheet row. Wind-up frames play during startup, impact frames while the hitbox is live, the rest during recovery. Add an entry when a fighter gets new art;
+const FXS={avrider:{src:'av_rider.png'},avcrusher:{src:'av_crusher.png'},avpeggy:{src:'av_peggy.png'},demon:{src:'demon_sheet.png'},static:{src:'static_sheet.png'},madog:{src:'madog_fx.png'},fengsw:{src:'feng_sw.png'},fengpamph:{src:'feng_pamph.png'},fengpillar:{src:'feng_pillar.png'},vortex:{src:'erebus_vortex.png'},gfboulder:{src:'gf_boulder.png'},gfgiant:{src:'gf_giant.png'},unda:{src:'erebus_unda.png'},dask:{src:'dask_fx.png'},ten:{src:'tenebrund_fx.png'},sbul:{src:'salty_bullets.png'},swave:{src:'salty_wave.png'},shipdoor:{src:'ship_door.png'},bloatfly:{src:'tahoe_bloatfly.png'},cproj:{src:'calder_proj.png'},cchem:{src:'calder_chems.png'},hrfx:{src:'hr_fx.png'},hrp:{src:'hr_plasma.png'},oproj:{src:'owen_proj.png'},olaser:{src:'owen_laser.png'},osmoke:{src:'owen_smoke.png'},tfx:{src:'tedd_fx.png'},bfx:{src:'bof_fx.png'},cdeer:{src:'chief_deer.png'},celf:{src:'chief_elves.png'},cfx:{src:'chief_fx.png'},arrows:{src:'vogler_arrows.png'},sdragon:{src:'soren_dragon.png'},sfx:{src:'soren_fx.png'}};
 const SBC=84,SWC=230; // salty bullets (bullet 4, muzzle 4, impact 6) and Mush It wave (loop 8, fade 8)
 const TFC=204; // tenebrund_fx cell; rows: stink puff 6, loop 8, fade 6, grater sparks 6, belly flop 8, flies 6
 const DFC=284; // dask_fx cell; rows: reckless aura 5, axe slash 5, rage finisher 8, dask action dust 5
@@ -2191,9 +2257,13 @@ function sheetFrame(f,sh){
     if(f.st==='atk'&&f.mv==='s1')return[7,f.mf<8?0:f.mf<TRAIN_END?1+Math.floor(f.t/3)%5:Math.min(7,6+Math.floor((f.mf-TRAIN_END)/10))]}
   if(c.id==='dask'&&f.st==='atk'&&f.mv==='s2')return[1,Math.floor(t/2)%sh.frames[1]]; // Barbarian Charge: his run, sped up
   if(f.st==='grind')return[7,f.t>=70?7:3+Math.floor(f.t/6)%3];
+  if(f.st==='break'&&sh.breakRow)return[sh.breakRow,f.t<18?Math.floor(f.t/6):3+Math.floor((f.t-18)/8)%(sh.frames[sh.breakRow]-3)]; // Big Chief's Union Break: sits down, then sips coffee
   switch(f.st){
-    case'atk':{const m=c.moves[f.mv];row=SHEET_ROW[f.mv]??4;const n=sh.frames[row];col=Math.min(n-1,Math.floor(f.mf/m.len*n));break}
-    case'walk':{const back=f.vx*f.face<-0.1&&sh.frames[15],slow=f.slow>0&&sh.frames[14]; // optional rows: 15 = backing up (played in reverse), 14 = slow walk when slowed; else the run
+    case'atk':{const m=c.moves[f.mv];row=SHEET_ROW[f.mv]??4;const n=sh.frames[row],ah=ART_HIT[c.id]&&ART_HIT[c.id][f.mv];
+      if(ah&&m.wins&&m.wins.length){const[q,r]=m.wins[0],[hc,hn]=ah,mf=f.mf; // line the impact frames up with the live hitbox
+        col=mf<q?Math.floor(mf/q*hc):mf<r?hc+Math.min(hn-1,Math.floor((mf-q)/(r-q)*hn)):Math.min(n-1,hc+hn+Math.floor((mf-r)/Math.max(1,m.len-r)*(n-hc-hn)))}
+      else col=Math.min(n-1,Math.floor(f.mf/m.len*n));break}
+    case'walk':{const back=f.vx*f.face<-0.1&&sh.frames[15]&&!sh.breakRow,slow=f.slow>0&&sh.frames[14]; // optional rows: 15 = backing up (played in reverse), 14 = slow walk when slowed; else the run
       if(back){const n=sh.frames[15];row=15;col=n-1-Math.floor(t/4)%n}else if(slow){row=14;col=Math.floor(t/5)%sh.frames[14]}else{row=1;col=Math.floor(t/4)%sh.frames[1]}break}
     case'jump':row=2;col=f.vy<0?0:1;break;
     case'hit':case'grabbed':row=10;col=Math.min(1,Math.floor(t/5));break;
@@ -2218,7 +2288,8 @@ function dragonArt(f){return f.dragon>0&&CH[f.c].id==='soren'&&fxOn('sdragon')}
 function drawBody(f,key){ // the fighter itself: hand-made sprite sheet, pixel sprite, or smooth vector art
   const R=RIG[CH[f.c].id],sh=sheetFor(f);
   if(dragonArt(f)){const[row,col]=dragonFrame(f);fxCell(fxOn('sdragon'),col*DGW,row*DGH,DGW,DGH,-DGX-30,-DGY,DGW,DGH);return} // Silver Dragon form: its own big sheet, 1 sheet px per game unit
-  if(sh){const[row,col]=sheetFrame(f,sh),U=1.5,sm=g.imageSmoothingEnabled;g.imageSmoothingEnabled=false;g.drawImage(sh.img,col*256,row*272,256,272,-128/U,-226/U,256/U,272/U);g.imageSmoothingEnabled=sm;return}
+  if(sh){const[row,col]=sheetFrame(f,sh),U=1.5,sm=g.imageSmoothingEnabled,[CW,CHh,FX,FY]=sh.cell||[256,272,128,226];g.imageSmoothingEnabled=false;g.drawImage(sh.img,col*CW,row*CHh,CW,CHh,-FX/U,-FY/U,CW/U,CHh/U); // cell size per sheet (default 256x272, feet at 128,226; Tedd's big flame arcs need bigger cells)
+   g.imageSmoothingEnabled=sm;return}
   if(pixelArt&&R.pal){const sp=pixelSprite(f,key);const sm=g.imageSmoothingEnabled;g.imageSmoothingEnabled=false;g.drawImage(sp.cv,-sp.ox/PXS,-sp.oy/PXS,sp.cv.width/PXS,sp.cv.height/PXS);g.imageSmoothingEnabled=sm}
   else drawRig(f,poseOf(f));
 }
@@ -2249,7 +2320,7 @@ function drawFighter(f,tagCol,tag){
   if(f.armor){g.strokeStyle='#ffffffaa';g.lineWidth=3;rr(-c.w/2-6,-c.h-6,c.w+12,c.h+12,14);g.stroke()}
   g.restore();
   if(act&&act.dmg&&!(c.id==='soren'&&f.mv==='ah')){ // swoosh trail on the attack's hitbox (not Soren's air heavy: his sprite has its own light burst)
-    const b=hbox(f,act.box),cx=b[0]+b[2]/2,cy=b[1]+b[3]/2;
+    const b=hbox(f,atkBox(f,act)),cx=b[0]+b[2]/2,cy=b[1]+b[3]/2;
     g.save();g.translate(cx,cy);g.scale(f.face,1);
     g.strokeStyle=f.mv==='su'?'#ffd34dcc':'#ffffffaa';g.lineWidth=5;g.lineCap='round';
     g.beginPath();g.ellipse(-b[2]*0.2,0,b[2]*0.55,b[3]*0.6,0,-1.4,1.1);g.stroke();
@@ -2263,7 +2334,8 @@ function drawFighter(f,tagCol,tag){
     let ty=f.y-c.h-(f.reckless>0||f.muddle>0?70:52);
     if(f.chemEnd>S.frame&&f.st!=='ko'&&fxOn('cchem')){const d=40,iy=ty-6;fxCell(fxOn('cchem'),(Math.floor(S.frame/6)%6)*160,f.chemQ*160,160,160,f.x-d/2,iy-d/2-8,d,d);ty-=34}g.font='16px Bangers,Impact,sans-serif';g.textAlign='center';g.lineWidth=4;g.strokeStyle='#000';
     for(const[tx,col]of tags){if(f.st==='ko')break;g.fillStyle=col;g.strokeText(tx,f.x,ty);g.fillText(tx,f.x,ty);ty-=17}
-    if(f.brk>0&&fxOn('cfx')){const d=64;fxCell(fxOn('cfx'),(Math.floor((S?S.frame:0)/6)%6)*210,630,210,210,f.x+f.face*26-d/2,f.y-c.h*0.55-d/2,d,d)}
+    if(f.brk>0&&sheetFor(f)&&sheetFor(f).breakRow){} // the sprite has its own coffee break
+    else if(f.brk>0&&fxOn('cfx')){const d=64;fxCell(fxOn('cfx'),(Math.floor((S?S.frame:0)/6)%6)*210,630,210,210,f.x+f.face*26-d/2,f.y-c.h*0.55-d/2,d,d)}
     else if(f.brk>0){const mx=f.x+f.face*20,my=f.y-c.h*0.55;g.save();g.translate(mx,my);poly([-6,-8,6,-8,5,6,-5,6],'#f6f2ea',2);g.strokeStyle=OUT;g.lineWidth=2;g.beginPath();g.arc(7,-1,4,-1.4,1.4);g.stroke();
       g.strokeStyle='#ffffffaa';g.lineWidth=1.5;for(let i=0;i<2;i++){const q=(f.t*0.6+i*10)%20;g.beginPath();g.moveTo(-2+i*4,-10-q);g.quadraticCurveTo(1+i*4,-14-q,-2+i*4,-18-q);g.stroke()}g.restore()}}
   if(f.muddle>0&&f.st!=='ko'){g.font='18px Bangers,Impact,sans-serif';g.fillStyle='#e98bff';g.strokeStyle='#000';g.lineWidth=4;g.strokeText('MUDDLED',f.x,f.y-c.h-52);g.fillText('MUDDLED',f.x,f.y-c.h-52);
@@ -2284,15 +2356,15 @@ function drawProj(p){
     if(p.kind==='rifle'){const d=75;fxCell(im,(Math.floor(p.t/3)%3)*200,0,200,200,-d*0.75,-d/2,d,d)}
     else{const d=p.big?62:52;fxCell(im,(Math.floor(p.t/4)%4)*200,(p.big?3:2)*200,200,200,-d/2,-d/2,d,d)}}
   else if(p.kind==='bullet'&&fxOn('sbul')){const d=SBC/1.5;g.scale(Math.sign(p.vx)||1,1);fxCell(fxOn('sbul'),(Math.floor(p.t/3)%4)*SBC,0,SBC,SBC,-d*0.75,-d/2,d,d)}
-  else if(p.kind==='wave'&&fxOn('swave')){const d=SWC/1.5;g.scale(Math.sign(p.vx)||1,1);fxCell(fxOn('swave'),(Math.floor(p.t/5)%8)*SWC,0,SWC,SWC,-d/2,-d/2,d,d)}
+  else if(p.kind==='wave'&&fxOn('swave')){const d=SWC/1.5*(p.sc||1);g.scale(Math.sign(p.vx)||1,1);fxCell(fxOn('swave'),(Math.floor(p.t/5)%8)*SWC,0,SWC,SWC,-d/2,-d/2,d,d)}
   else if(p.kind==='bullet'){g.fillStyle='#ffd34d';g.fillRect(-p.w/2,-p.h/2,p.w,p.h);g.fillStyle='#fff6';g.fillRect(-p.w/2-10*Math.sign(p.vx),-2,10,4)}
   else if(p.kind==='pamph'&&fxOn('fengpamph')){const d=56/1.5;g.scale(Math.sign(p.vx)||1,1);fxCell(fxOn('fengpamph'),(Math.floor(p.t/3)%8)*56,0,56,56,-d/2,-d/2,d,d)}
-  else if(p.kind==='frost'&&fxOn('sfx')){const d=p.big?64+p.t*2.4:72;g.scale(Math.sign(p.vx)||1,1);g.globalAlpha=Math.max(0,Math.min(1,1.6-1.6*p.t/(p.life+2)));fxCell(fxOn('sfx'),Math.min(5,Math.floor(p.t/(p.life)*7))*256,(p.big?1:0)*256,256,256,-d/2,-d/2,d,d);g.globalAlpha=1}
-  else if(p.kind==='frost'){const k=Math.min(1,p.t/8),r=(p.big?16:11)+p.t*0.5;g.globalAlpha=Math.max(0,1-p.t/(p.life+2));const gr=g.createRadialGradient(0,0,1,0,0,r);gr.addColorStop(0,'#ffffff');gr.addColorStop(0.5,'#bfe6ff');gr.addColorStop(1,'#7fb8ff00');g.fillStyle=gr;g.beginPath();g.arc(0,0,r*k+4,0,7);g.fill();g.fillStyle='#ffffff';for(let i=0;i<3;i++)g.fillRect(Math.cos(p.t+i*2)*r*0.6,Math.sin(p.t*1.3+i)*r*0.5,2,2)}
+  else if(p.kind==='frost'&&fxOn('sfx')){const d=p.big?64+p.t*2.4:72;g.scale(Math.sign(p.vx)||1,1);g.globalAlpha=p.fadeLen?p.fadeA*p.life/p.fadeLen:Math.max(0,Math.min(1,1.6-1.6*p.t/(p.life+2)));fxCell(fxOn('sfx'),(p.fadeLen?p.fadeF:Math.min(5,Math.floor(p.t/(p.life)*7)))*256,(p.big?1:0)*256,256,256,-d/2,-d/2,d,d);g.globalAlpha=1}
+  else if(p.kind==='frost'){const k=Math.min(1,p.t/8),r=(p.big?16:11)+p.t*0.5;g.globalAlpha=p.fadeLen?p.fadeA*p.life/p.fadeLen:Math.max(0,1-p.t/(p.life+2));const gr=g.createRadialGradient(0,0,1,0,0,r);gr.addColorStop(0,'#ffffff');gr.addColorStop(0.5,'#bfe6ff');gr.addColorStop(1,'#7fb8ff00');g.fillStyle=gr;g.beginPath();g.arc(0,0,r*k+4,0,7);g.fill();g.fillStyle='#ffffff';for(let i=0;i<3;i++)g.fillRect(Math.cos(p.t+i*2)*r*0.6,Math.sin(p.t*1.3+i)*r*0.5,2,2)}
   else if(p.kind==='moon'&&fxOn('sfx')){const d=84;g.scale(Math.sign(p.vx)||1,1);fxCell(fxOn('sfx'),(p.t<9?Math.floor(p.t/3):2+Math.floor(p.t/4)%2)*256,2*256,256,256,-d/2-14,-d/2,d,d)}
   else if(p.kind==='moon'){g.scale(Math.sign(p.vx)||1,1);g.shadowColor='#dfe9ff';g.shadowBlur=14;g.fillStyle='#f4f7ff';g.beginPath();g.arc(0,0,11,-1.3,1.3);g.arc(-5,0,9,1.2,-1.2,true);g.fill();g.shadowBlur=0;g.fillStyle='#dfe9ff66';g.fillRect(-26,-2,18,4)}
   else if(p.kind==='pamph'){g.rotate(p.t*0.25);g.fillStyle='#fff';g.fillRect(-11,-8,22,16);g.fillStyle='#d9a12b';g.fillRect(-8,-4,16,2);g.fillRect(-8,1,16,2)}
-  else if(p.kind==='wave'){g.fillStyle='#8fc8ff';g.font='24px serif';g.fillText('♪',-6,-40+Math.sin(p.t*0.3)*4);g.scale(Math.sign(p.vx)||1,1);g.strokeStyle='#8fc8ff';g.lineWidth=4;for(let i=0;i<3;i++){g.globalAlpha=1-i*0.3;g.beginPath();g.arc(-20-i*12,0,40+i*10,-0.9,0.9);g.stroke()}g.globalAlpha=1}
+  else if(p.kind==='wave'){const sc=p.sc||1;g.scale(sc,sc);g.fillStyle='#8fc8ff';g.font='24px serif';g.fillText('♪',-6,-40+Math.sin(p.t*0.3)*4);g.scale(Math.sign(p.vx)||1,1);g.strokeStyle='#8fc8ff';g.lineWidth=4;for(let i=0;i<3;i++){g.globalAlpha=1-i*0.3;g.beginPath();g.arc(-20-i*12,0,40+i*10,-0.9,0.9);g.stroke()}g.globalAlpha=1}
   else if(p.kind==='rifle'){g.scale(Math.sign(p.vx)||1,1);const gr=g.createLinearGradient(-40,0,12,0);gr.addColorStop(0,'#fff6c000');gr.addColorStop(1,'#fff6c0');g.fillStyle=gr;g.fillRect(-40,-2,52,4);g.fillStyle='#fff';g.fillRect(4,-2,8,4)}
   else if(p.kind==='dart'){g.scale(Math.sign(p.vx)||1,1);const sc=p.big?1.2:1;g.scale(sc,sc);g.fillStyle='#e8f6ff';g.fillRect(-10,-3,16,6);g.fillStyle='#7fe08a';g.fillRect(-6,-2,9,4);g.strokeStyle=OUT;g.lineWidth=1.2;g.strokeRect(-10,-3,16,6);g.fillStyle='#9aa1ad';g.fillRect(6,-0.7,9,1.4);g.fillRect(-14,-4,4,8)}
   else if(p.kind==='plasma'){const r=14+2*Math.sin(p.t*0.6),gr=g.createRadialGradient(0,0,2,0,0,r+8);gr.addColorStop(0,'#f0fff0');gr.addColorStop(0.4,'#7fff6a');gr.addColorStop(1,'#2fa02a00');g.fillStyle=gr;g.beginPath();g.arc(0,0,r+8,0,7);g.fill();
@@ -2349,7 +2421,11 @@ function drawZone(z){
     fxCell(fxOn('fengpillar'),c*FPC,r*FPC,FPC,FPC,z.x-d/2,FLOOR-(FPC-8)*FPS_,d,d);return}
   if(z.k==='stink'&&fxOn('ten')){const sc=z.w/150,d=TFC*sc;let r,c;
     if(z.tk<18){r=0;c=Math.floor(z.tk/3)}else if(z.life<18){r=2;c=Math.min(5,Math.floor((18-z.life)/3))}else{r=1;c=Math.floor(z.tk/6)%8}
-    fxCell(fxOn('ten'),c*TFC,r*TFC,TFC,TFC,z.x-d/2,z.y-(TFC-8)*sc,d,d);return}
+    const fade=z.life<18?z.life/18:Math.min(1,z.tk/18);g.save();g.globalAlpha=0.5;
+    fxCell(fxOn('ten'),c*TFC,r*TFC,TFC,TFC,z.x-d/2,z.y-(TFC-8)*sc,d,d);
+    for(let i=0;i<4;i++){const P=64,ph=(z.tk+i*17)%P,t=ph/P,px=z.x+(((i*37)%9)/8-0.5)*z.w*0.6+Math.sin((z.tk+i*29)*0.06)*8,py=z.y-z.h*0.45-t*70,pd=26+i%2*8+t*10; // small puffs drifting up out of the cloud and fading
+      g.globalAlpha=0.5*fade*Math.min(1,t*5)*(1-t);fxCell(fxOn('ten'),(6+i%2)*TFC,0,TFC,TFC,px-pd/2,py-pd/2,pd,pd)}
+    g.restore();return}
   if(z.k==='guard'&&fxOn('madog')){const sc=240/148,d=MFC*sc;let r,c;
     if(z.tk<18){r=0;c=Math.floor(z.tk/3)}else if(z.life<18){r=2;c=Math.min(5,Math.floor((18-z.life)/3))}else{r=1;c=Math.floor(z.tk/4)%8}
     fxCell(fxOn('madog'),c*MFC,r*MFC,MFC,MFC,z.x-d/2,z.y-d/2,d,d);return}
@@ -2416,13 +2492,13 @@ function drawFx(e){
   if(e.k==='smuzzle'||e.k==='simpact'||e.k==='swfade'){
     const im=fxOn(e.k==='swfade'?'swave':'sbul');if(!im){if(e.k==='simpact')drawFx({...e,k:'spark',col:'#ffd34d'});return}
     g.save();g.translate(e.x,e.y);g.scale(e.dir,1);
-    if(e.k==='swfade'){const d=SWC/1.5;fxCell(im,Math.min(7,Math.floor(k*8))*SWC,SWC,SWC,SWC,-d/2,-d/2,d,d)}
+    if(e.k==='swfade'){const d=SWC/1.5*(e.sc||1);fxCell(im,Math.min(7,Math.floor(k*8))*SWC,SWC,SWC,SWC,-d/2,-d/2,d,d)}
     else{const d=SBC/1.5,r=e.k==='smuzzle'?1:2,n=e.k==='smuzzle'?4:6;fxCell(im,Math.min(n-1,Math.floor(k*n))*SBC,r*SBC,SBC,SBC,-d/2,-d/2,d,d)}
     g.restore();return}
   if(e.k==='tgrate'||e.k==='tflop'){const im=fxOn('ten');
     if(!im){drawFx({...e,k:e.k==='tgrate'?'spark':'ring'});return}
     if(e.k==='tgrate'){const d=TFC*0.6;fxCell(im,Math.min(5,Math.floor(k*6))*TFC,3*TFC,TFC,TFC,e.x-d/2,e.y-d/2,d,d)}
-    else{const sc=1.8,d=TFC*sc;fxCell(im,Math.min(7,Math.floor(k*8))*TFC,4*TFC,TFC,TFC,e.x-d/2,e.y-(TFC-30)*sc,d,d)}
+    else{const sc=1.8,d=TFC*sc;fxCell(im,Math.min(7,Math.floor(k*8))*TFC,4*TFC,TFC,TFC,e.x-d/2,e.y-(TFC-30)*sc+16,d,d)} // crater sits 16 lower, on the ground
     return}
   if(e.k==='dslash'||e.k==='dfinish'||e.k==='ddust'){const im=fxOn('dask');if(!im){if(e.k!=='ddust'){g.save();drawFx({...e,k:'spark',col:'#ff6a5a',big:e.k==='dfinish'});g.restore()}return}
     g.save();g.translate(e.x,e.y);g.scale(e.dir,1);
@@ -2467,7 +2543,7 @@ const PASSIVE_CD={calder:f=>[f.craftT||0,f.craftFull||1],tenebrund:f=>[f.walkArm
 const cdMax=new WeakMap(); // UI-only: the longest cooldown seen since it was last ready, for the progress ring
 function iconSrc(spec){
   if(!spec||!pixelArt)return null;const[k,r,c]=spec;
-  if(k.startsWith('sheet:')){const sh=SHEETS[k.slice(6)];return sh&&sh.ready?[sh.img,c*256+44,r*272+52,168,168]:null}
+  if(k.startsWith('sheet:')){const sh=SHEETS[k.slice(6)];if(!sh||!sh.ready)return null;const[CW,CHh,FX,FY]=sh.cell||[256,272,128,226];return[sh.img,c*CW+FX-84,r*CHh+FY-174,168,168]}
   const fx=FXS[k],C=FX_CELL[k];return fx&&fx.ready?[fx.img,c*C,r*C,C,C]:null;
 }
 function cdIcon(cx,cy,R,src,label,left,full,flip,cap){
@@ -2593,10 +2669,11 @@ function render(){
     const zBack=z=>z.o!==undefined&&bw[z.o]&&z.y!==undefined&&z.y<=wallTopY()+10; // an area effect sitting up on the wall with its owner (not ground-level ones like the picket line)
     S.zones.filter(zBack).forEach(drawZone);drawVolleyBack();order.filter(f=>bw[f.i]).forEach(drawF);
     drawOverlays('front'); // the wall, inn and ground in front of anyone up on the wall walks
-    S.zones.filter(z=>!zBack(z)).forEach(drawZone);order.filter(f=>!bw[f.i]).forEach(drawF);
-    drawStageFront();drawDavid(true);drawBoulder();drawSnow();drawVolley();drawShipDoors();drawBloatfly();drawWater();
+    S.zones.filter(z=>!zBack(z)&&z.k!=='stink').forEach(drawZone);S.fx.filter(e=>e.k==='tflop').forEach(drawFx); // Belly Flop crater: on the ground, behind the fighters
+    order.filter(f=>!bw[f.i]).forEach(drawF);S.zones.filter(z=>!zBack(z)&&z.k==='stink').forEach(drawZone); // stink cloud: over the fighters (half see-through) so they stand in it
+    drawStageFront();drawDavid(true);drawBoulder();drawSnow();drawVolley();drawShipDoors();drawBloatfly();drawMachines();drawWater();
     S.proj.forEach(drawProj);
-    S.fx.forEach(drawFx);
+    S.fx.forEach(e=>{if(e.k!=='tflop')drawFx(e)});
   }
   g.restore();
   if(S)hud();
@@ -3027,7 +3104,9 @@ const STAGE_INFO={ // details for the stage screen; 'fav'/'unf' name roles, neve
   fuckden:{hz:'None',hzd:'No hazard: just you, your opponent and stuffed David watching from the front counter.',
     feat:['A flat lobby floor','An upper floor on each side','The chandelier hanging over the middle is the highest spot, and it tips like a seesaw toward whoever stands on it (you slide a little downhill)'],fav:'Grapplers who can pin people in the lobby, and long-range shooters with a clear line across it.',unf:'Wildcards and all-rounders, who have nothing to play around.'},
   tahoe:{hz:'Bloatflies',hzd:'A bloatfly buzzes in every 13 seconds or so and chases whoever is closest. It bites once and leaves. Any hit or shot swats it.',
-    feat:['Ruined rooftops and a water-tower catwalk on the left','Shallow lake water on the right slows you down','A pier and a moored boat to stand on'],fav:'Fairly even. Zoners and heavies have a slight edge.',unf:'Rushdown fighters and all-rounders who get bogged down in the water.'}};
+    feat:['Ruined rooftops and a water-tower catwalk on the left','Shallow lake water on the right slows you down','A pier and a moored boat to stand on'],fav:'Fairly even. Zoners and heavies have a slight edge.',unf:'Rushdown fighters and all-rounders who get bogged down in the water.'},
+  avernus:{hz:'Infernal war machines',hzd:'Every 14 seconds or so a war machine roars in from one side (watch for the flashing arrows) and drives straight across the ground. The Infernal Rider is easy to hop, the Crusher needs a well-timed jump, and Fat Peggy herself needs a double jump or high ground. Getting hit hurts and launches you the way it was going.',
+    feat:['Flat, cracked hellrock with two boulders to hop or stand on (the machines ram straight through them)','Three cracked hilltops in the background, the centre crag highest: up there you are safe from the machines','Fat Peggy parked behind the fight, and Baldur\'s Gate hanging on its chains'],fav:'Grapplers and big close-range bruisers: the boulders and the machines keep the fight tight and up close.',unf:'Zoners and fighters who rely on shooting from range: the machines keep breaking up their spacing and there is nowhere safe to camp on the ground.'}};
 function startMatch(){attract=false;seed=(Date.now()&0xffffff)|1;S=SIM.newMatch(picks[0],picks[1],seed,stagePick==='random'?Math.floor(Math.random()*STAGES.length):stagePick);cpuMem=[{},{}];paused=false;show(null);acc=0;last=performance.now()}
 function togglePause(){if(!S)return;if(mode==='online'){if(confirm('Leave the online match?')){netSend({t:'bye'});netReset();toAttract();show('sTitle')}return}paused=!paused;show(paused?'sPause':null)}
 $('bPause').onclick=togglePause;
@@ -3045,7 +3124,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){netSend({t:'select'});netGoSelect(
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.12'; // shown on the title screen; online players must match
+const VERSION='0.2.13'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 (function checkForUpdate(){ // phones cache the page: if the copy on the server is newer, say so
