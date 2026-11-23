@@ -1,0 +1,60 @@
+PARTY BRAWL - PATCH NOTES v0.2.14
+Released 2026-11-23
+
+UP TO 4 PLAYERS
+- The main menu now has one LOCAL option instead of Solo / 2 Players / CPU vs CPU. It opens a
+  MATCH SETUP screen that decides the kind of game:
+  - 2, 3 or 4 players, each one Human or CPU (every CPU has its own difficulty).
+  - Free-for-all, or 2v2 teams (P1 + P3 vs P2 + P4). Teammates can't hurt each other.
+  - Win by health bars (best of 3, as before) or by LIVES (1-5 lives, one round, last one standing).
+    After losing a life you stay down for a moment, then drop back in with a short invincibility.
+  - Timer: 60, 99, 150 or 200 seconds, or no timer.
+  - Health: 50% to 200%.
+  - Stage hazards on or off.
+  - For 3-4 players, what happens when you're knocked out: spectate, or GHOST BRAWL (come back as a
+    see-through ghost and fight the other ghosts until the round ends; ghosts can't touch the living).
+  Your last setup is remembered on that device.
+- Then everyone picks a fighter in turn (P1, P2, P3, P4), then the stage.
+- Controls: with one human, every keyboard key set, controller and touch control drives them. With
+  2-4 humans, P1 uses key set 1 + controller 1, P2 key set 2 + controller 2, P3 and P4 need controllers.
+- In 3-4 player matches, homing moves and CPUs go after the nearest opponent; projectiles, area
+  effects, supers and stage hazards hit everyone they touch. A knocked-out fighter's body fades away
+  after a few seconds.
+- The victory screen shows every fighter with their own stats column. In Lives mode there's no round
+  count.
+
+ONLINE FOR UP TO 4 PLAYERS
+- Hosting a room opens the same setup first: room size (2, 3 or 4 players), whether empty slots get
+  CPUs or are left out, free-for-all or 2v2, and all the match rules.
+- Your friends join with the 4-letter room code and show up in a player list. The match starts by
+  itself when the room is full, or the host presses Start once enough people are in.
+- Everyone picks their own fighter; the host picks the stage and the others vote.
+- If someone's connection drops mid-match, a CPU takes over their fighter so the match can finish. If
+  the host leaves, the room closes.
+- Rematch starts when everyone still in the room presses it.
+- 1v1 online uses the same new online code. Everyone in a room must be on v0.2.14 (reload the page if
+  the game says your versions don't match).
+
+NICKNAMES
+- The first time you open the game it asks for a nickname (up to 16 characters), saved on that device.
+  The title screen shows "Playing as <name> · change", and you can also change it in Settings.
+- Online, everyone's nickname shows in the room list, on the character and stage screens, over their
+  fighter, on their name plate, on the victory screen and in rematch/disconnect messages.
+
+NEW FIGHT HUD (ALL MODES)
+- Built for up to 4 players and used in 1v1 too, so it's the same everywhere. Health bars along the top
+  (players 3 and 4 along the bottom). The super meter is now a small bar next to your name, with the
+  special/passive cooldown icons on the same row. Each player has a coloured P1-P4 chip that matches
+  the tag over their fighter.
+- In Lives mode a head icon with your lives left replaces the round pips; with no timer the clock shows
+  an infinity sign. Very long nicknames are shortened on the name plate.
+
+SUPER READY, AT A GLANCE
+- When a fighter's super meter fills, "SUPER READY!" pops up over their head in their player colour,
+  and they get a pulsing gold glow for as long as the super is ready.
+
+BEHIND THE SCENES
+- The game engine runs 2-4 fighters. Classic 1v1 plays exactly as before (checked against 104 recorded
+  1v1 matches).
+- Every stage has 4-player spawn points, also used for respawns in Lives mode.
+- Sprite sheets can use a bigger cell size per fighter; Tedd's flame arcs are no longer clipped.
