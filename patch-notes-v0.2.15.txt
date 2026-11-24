@@ -1,0 +1,31 @@
+PARTY BRAWL - PATCH NOTES v0.2.15
+Released 2026-11-23
+
+NEW ART
+- Bof: all-new sprites. A red-skinned ghoul with his Power Fist, a sawed-off shotgun on his back
+  and a bandolier of shells. Rising Power Fist uppercut (heavy), lunging Power Fist punch, the
+  shotgun draw-and-fire, a frenzied Gone Feral, and new hit, stunned, block and knocked-down frames.
+  His effects (punch impact, shotgun blast, feral slashes, ghoul healing) are unchanged.
+- Feng: all-new sprites with grown-up proportions. The half-orc war cleric in gold plate and a white
+  tabard with his spiked gold mace. Mace thrust (light), overhead smash (heavy), a proper pamphlet
+  flick for Pamphlet Toss, a glowing palm for Spiritual Weapon, mace-to-the-sky-then-point for Wicos
+  Wills It, and new hit, stunned, block and knocked-down frames. His effects (pamphlets, spectral
+  mace, pillar of light) are unchanged.
+
+NEW MUSIC
+- Feng has his own theme song, "Wicos Wills It".
+- Salty Balls has his own theme song, "Squeezebox Pirate".
+- Like the other fighter themes, these cut in when that fighter breaks the opponent's bar first or
+  won the last round, and play when they win.
+
+HITBOXES
+- Bof: hitboxes moved to match the new art. Heavy now covers the rising uppercut, from his chest to
+  above his head (was a chest-height box in front of him; reach 74 -> 60). Air heavy is now at chest
+  height in front of him (was low, under his feet). His other attacks line up as they were.
+- Feng: hitboxes moved to match the new art (same reach). Heavy: the overhead smash finishes low, so
+  it now covers shoulder to knee (was chest height only). Air heavy now swings in front of his head
+  and chest (was low, under his feet).
+
+BEHIND THE SCENES
+- Bof's and Feng's sprite sheets use the bigger cell size (like Tedd) so their weapons aren't clipped.
+- The new theme songs are volume-matched to the rest of the soundtrack.
