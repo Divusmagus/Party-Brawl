@@ -397,6 +397,26 @@ const DINO={chMax:30,tap:{vx:18,dmg:50,kb:[4,-1]},full:{vx:24,dmg:105,kb:[9,-3]}
   su:{lock:92,fire:104,dmg:240,track:7},eagle:0.25,eagleDist:800}; // Called Shot: laser tracks until frame 92 (7 px/frame), fires at 104; Eagle Eye: +25% at 800 px flown
 const DINO_TRICKS=['fire','whistle','rope'];
 function dinoFire(s,a,x,y){s.zones=s.zones.filter(z=>!(z.k==='dfire'&&z.o===a.i&&Math.abs(z.x-x)<60));s.zones.push({k:'dfire',o:a.i,x,y,w:DINO.fire.w,h:DINO.fire.h,life:DINO.fire.life,tk:0,hc:{}})} // a fire arrow's flames
+const KUCK={toss:{vx:8.5,vy:-7,g:0.42,dmg:62,kb:[7,-5],hs:22},cd:360,pickR:36,pickAfter:30,statue:{w:36,h:54}, // Kuck: stuffed David is lobbed and stands where he lands as a statue (blocks enemies and their shots) until Kuck picks him up (cooldown reset) or the 6s cooldown runs out
+  imp:{vx:7.5,dmg:64,kb:[8,-5],hs:20,life:130}, // Punt the Imp runs along the ground
+  watch:{t:360,every:60,r:190,dmg:35,max:6,per:0.05,last:360,spd:1.3}, // I'm Watching You: 6s see-through, a psychic pulse every 1s within 190 (35 dmg + a Watched stack); each stack +5% damage taken from Kuck, max 6, stacks last 6s
+  veng:{take:0.8,kb:0.7}}; // Vengeance: while statue David or the imp is out, 20% less damage and 30% less knockback
+function kuckVeng(s,k){return CH[k.c].id==='kuck'&&(s.zones.some(z=>z.o===k.i&&z.k==='kdavid'&&z.ground)||s.proj.some(p=>p.o===k.i&&p.kind==='imp'))} // David's face is out there watching
+function kuckHome(s,a){return!s.proj.some(p=>p.o===a.i&&p.kind==='david')&&!s.zones.some(z=>z.o===a.i&&z.k==='kdavid')} // is stuffed David with him (not thrown, not standing somewhere)?
+function kuckStatueBox(z){const S2=KUCK.statue;return[z.x-S2.w/2,z.y-S2.h,S2.w,S2.h]}
+const VEGA={glaive:{vx:15,dmg:70,kb:[8,-1],hs:42,life:56,cd:300}, // Vegagath: Glaive Throw flies straight, stuns and pins them back (never a wall splat), then it's back in his hand; 5s cooldown
+  surge:{l:0.3,h:0.15}, // Action Surge: chance a light/heavy instantly repeats (light more often: it does less)
+  wind:0.08,stone:{min:60,cut:0.4,cd:720}, // Dash + Second Wind heals 8% of max health; Stone's Endurance: a hit of 60+ does 40% less, then 12s to recharge
+  heli:{hits:8,every:7,dmg:22,last:80,spd:5}}; // The Helicopter: 8 quick saw-blade hits while he advances, then a big last one
+function vegaHas(s,a){return!s.proj.some(p=>p.o===a.i&&p.kind==='glaive')} // glaive in hand (not flying)? Drawing only
+const SQ={blast:{vx:13,dmg:40,kb:[6,-2],hs:14,life:62,gap:8},spec:{t:300,dmg:20,shield:0.06},two:600,step:{r:170,dmg:180,kb:[12,-9]}}; // Squirm: Eldritch Blast (two bolts), the specter (5s: Dark damage back at melee attackers + grey shield 6% of max), Two Minds (Daevic blocks a hit from behind, every 10s), Thunder Step
+const NET={deflect:0.3,back:0.6,peggy:{w:185,h:105,spd:12,dmg:200,kb:[14,-12]}}; // Nettor: Deflect Missiles (30%, sent back at 60%), FAT PEGGY! drives across the whole stage
+function nettorThru(f){return f.st==='atk'&&f.mv==='s2'&&f.mf<22&&CH[f.c].id==='nettor'} // Stumble: lurches straight through people
+function squirmSafe(s,a){ // Thunder Step: the standing spot (floor or a fixed platform) furthest from every enemy
+  const F=foes(s,a).filter(d=>d.st!=='ko'),sw=STAGE.swing?STAGE.swing.i:-1,cand=[];
+  for(let x=WALL_L+40;x<=WALL_R-40;x+=20){const y=floorY(x);if(y<H-5)cand.push([x,y])}
+  STAGE.plats.forEach((p,i)=>{if(i===sw||p.solid)return;for(let x=p.x+20;x<=p.x+p.w-20;x+=20)cand.push([x,platY(p,x)])});
+  let best=[a.x,a.y],bs=-1;for(const[x,y]of cand){const d=F.length?Math.min(...F.map(f=>Math.hypot(f.x-x,(f.y-y)*1.5))):0;if(d>bs+0.01){bs=d;best=[x,y]}}return best}
 const CH=[
 {id:'frica',name:'Frica the Poor',player:'Jon',camp:"Storm King's Thunder",role:'Wildcard',types:{s1:'Dark',s2:'Fire',su:'Psychic'},
  passive:{n:'Life Drinker',d:'Hits with his blade (normals and Hex Blade) have a 5% chance (10% on a hexed target) to give him a grey shield of 5% max HP. Refills, never stacks'},
@@ -656,6 +676,63 @@ const CH=[
           for(const tg of foes(s,a))if(!hitSet[tg.i]&&tg.st!=='ko'&&hitsF([x-5,y-5,10,10],tg)){hitSet[tg.i]=1;hitF(s,a,tg,{dmg:DINO.su.dmg*CH[a.c].pow,kb:[ux*13,-6+uy*4],hs:40,launch:true,unb:true,dir:ux>=0?1:-1,src:'su'})}}
         s.fx.push({k:'dshot',x:bx,y:by,x2:x,y2:y,life:20,t:0});s.shake=Math.max(s.shake,10)}}}),
  })},
+{id:'kuck',name:'Kuck Hold',player:'Joe',camp:'Waterdeep: Dragon Heist',role:'Wildcard',types:{s2:'Fire',su:'Psychic'},
+ passive:{n:'Vengeance',d:'While David\'s face is out there watching (statue David standing on the field, or the imp in its David disguise running around), Kuck takes 20% less damage and 30% less knockback'},
+ col:'#2a2430',col2:'#8a1c24',skin:'#d9b08c',w:42,h:92,hp:1020,spd:4.3,jump:-15,weight:1.0,pow:1.26,
+ blurb:'Zhentarim boss with a fiend patron, half the gold, and the stuffed body of the gnome who robbed him. Watches through the eye holes.',
+ moves:Object.assign(normals({reach:6}),{
+  s1:mv({n:'Stuffed David',d:'Hurls stuffed David at them. He stands where he lands as a statue that blocks enemies and their shots. Walk over him to pick him up and reset the cooldown; otherwise he\'s gone when the 6s cooldown runs out',su:8,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:KUCK.cd,
+    tick:(s,a,f)=>{if(f!==8)return;s.zones=s.zones.filter(z=>!(z.k==='kdavid'&&z.o===a.i));
+      const T=KUCK.toss;proj(s,a,{kind:'david',x:a.x+a.face*24,y:a.y-70,vx:a.face*T.vx,vy:T.vy,g:T.g,w:30,h:40,life:150,dmg:T.dmg,kb:T.kb,hs:T.hs});say(s,a.x,a.y-120,'GET HIM, DAVID!','#e8d0a8',22)}}),
+  s2:mv({n:'Punt the Imp',d:'Drop-kicks his imp (badly disguised as David) along the ground. It scurries straight ahead, hopping down off ledges, and bursts into hellfire on the first enemy it reaches',su:10,ac:1,re:16,dmg:0,box:[0,0,0,0],cd:180,
+    tick:(s,a,f)=>{if(f===10){const I=KUCK.imp;proj(s,a,{kind:'imp',x:a.x+a.face*30,y:a.y-22,vx:a.face*I.vx,vy:-4,g:0.5,walker:1,w:30,h:36,life:I.life,dmg:I.dmg,kb:I.kb,hs:I.hs,type:'Fire'});say(s,a.x+a.face*40,a.y-110,'OOF!','#ff6a5a',20)}}}),
+  su:mv({n:"I'm Watching You",d:'Fades from sight for 6s: only his glowing eyes show, and he moves 30% faster. Every second a psychic pulse hurts everyone near him and marks them as WATCHED. Each stack makes Kuck\'s hits on them do 5% more damage (up to 6 stacks); stacks last 6s',su:14,ac:1,re:16,dmg:0,box:[0,0,0,0],inv:[0,14],
+    start:(s,a)=>say(s,a.x,a.y-130,"I'M WATCHING YOU...",'#e8e4ff',36),
+    tick:(s,a,f)=>{if(f===14){a.watch=KUCK.watch.t+1;s.fx.push({k:'ring',x:a.x,y:a.y-50,life:22,t:0,col:'#c8b8ff'})}}}),
+ })},
+{id:'vega',name:'Vegagath Hardheart',player:'Matt',camp:'Waterdeep: Dragon Heist',role:'Heavy',
+ passive:{n:'Action Surge',d:'Fighter training: a light attack has a 30% chance, and a heavy a 15% chance, to instantly go again with no input'},
+ col:'#6a4a2a',col2:'#3a3028',skin:'#9aa3a8',w:52,h:104,hp:1200,spd:4.0,jump:-14.5,weight:1.3,pow:1.2,
+ blurb:'Goliath fighter with a glaive. Pretty simple-minded. Once took something Alaric gave him, and the city has never forgotten it.',
+ moves:Object.assign(normals({reach:24}),{
+  s1:mv({n:'Glaive Throw',d:'Hurls his glaive straight ahead. It spears the first enemy it hits: a long stun as they\'re pinned and pushed back (never a wall splat). Then it\'s back in his hand. 5s cooldown',su:12,ac:1,re:16,dmg:0,box:[0,0,0,0],cd:VEGA.glaive.cd,
+    tick:(s,a,f)=>{if(f===12){const G=VEGA.glaive;proj(s,a,{kind:'glaive',x:a.x+a.face*40,y:a.y-66,vx:a.face*G.vx,w:70,h:14,life:G.life,dmg:G.dmg,kb:G.kb,hs:G.hs,onHit:(s,a,d)=>{d.splat=1;say(s,d.x,d.y-CH[d.c].h-34,'PINNED!','#cfd6e0',24)}});say(s,a.x,a.y-130,'HRRAH!','#cfd6e0',22)}}}),
+  s2:mv({n:'Second Wind',d:'Dashes forward and catches his breath on the way, healing 8% of his max health. 10s cooldown',su:4,ac:1,re:18,dmg:0,box:[0,0,0,0],cd:600,mv:[[4,18,13]],
+    tick:(s,a,f)=>{if(f===4){const h=Math.min(a.maxHp-a.hp,Math.round(a.maxHp*VEGA.wind));a.hp+=h;say(s,a.x,a.y-130,'SECOND WIND! +'+h,'#9bf0a0',24);s.fx.push({k:'ring',x:a.x,y:a.y-50,life:18,t:0,col:'#9bf0a0',small:1})}}}),
+  su:mv({n:'The Helicopter',d:'High on whatever Alaric gave him, he strips off and charges in, helicoptering like a saw blade: eight quick hits and a big finish. Plows through attacks (armored)',su:16,re:22,len:16+VEGA.heli.hits*VEGA.heli.every+24,dmg:VEGA.heli.dmg,box:[0,-78,74,44],kb:[2,-1],hs:16,inv:[0,16],armor:[16,16+VEGA.heli.hits*VEGA.heli.every+8],
+    wins:[...Array(VEGA.heli.hits)].map((_,k)=>[16+k*VEGA.heli.every,19+k*VEGA.heli.every]).concat([[16+VEGA.heli.hits*VEGA.heli.every,22+VEGA.heli.hits*VEGA.heli.every]]),
+    dmgs:Array(VEGA.heli.hits).fill(VEGA.heli.dmg).concat([VEGA.heli.last]),kbs:Array(VEGA.heli.hits).fill([2,-1]).concat([[14,-8]]),launch:true,mv:[[16,16+VEGA.heli.hits*VEGA.heli.every,VEGA.heli.spd]],
+    start:(s,a)=>{say(s,a.x,a.y-140,'WHIRRRRRR!','#ffd34d',44);s.fx.push({k:'vclothes',x:a.x,y:a.y-70,dir:a.face,life:50,t:0})}}),
+ })},
+{id:'squirm',name:'Squirm',player:'Paul',camp:'Princes of the Apocalypse',role:'Zoner',types:{s1:'Energy',s2:'Dark',su:'Sonic'},
+ passive:{n:'Two Minds',d:'Daevic, the voice only Squirm can hear, watches his back: once every 10s a hit from behind is blocked for him ("BEHIND YOU, IDIOT!")'},
+ col:'#3a2a4a',col2:'#6a4a8a',skin:'#e0b896',w:40,h:90,hp:980,spd:4.4,jump:-15,weight:0.95,pow:1.1,
+ blurb:'A hexblade who never uses the blade, just Eldritch Blast. Argues out loud with Daevic, a voice nobody else can hear.',
+ moves:Object.assign(normals({reach:0,nmul:0.8}),{
+  s1:mv({n:'Eldritch Blast',d:'Two quick bolts of force in a straight line, each pushing them back a little',su:10,ac:1,re:16,len:10+SQ.blast.gap+16,dmg:0,box:[0,0,0,0],cd:90,
+    tick:(s,a,f)=>{if(f===10||f===10+SQ.blast.gap){const B=SQ.blast;proj(s,a,{kind:'eblast',x:a.x+a.face*28,y:a.y-62,vx:a.face*B.vx,w:26,h:14,life:B.life,dmg:B.dmg,kb:B.kb,hs:B.hs,type:'Energy'})}}}),
+  s2:mv({n:'Specter',d:'Summons a specter that circles him for 5s: anyone who hits him in melee takes Dark damage, and it gives him a small grey shield (6% of his max health). 7s cooldown',su:10,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:420,
+    tick:(s,a,f)=>{if(f===10){const P2=SQ.spec;a.specter=P2.t;a.temp=Math.max(a.temp||0,Math.round(a.maxHp*P2.shield));a.tempT=Math.max(a.tempT||0,P2.t);say(s,a.x,a.y-125,['NOT NOW, DAEVIC!','I KNOW, I KNOW!','STOP TALKING!'][(s.frame>>2)%3],'#b48cff',20);s.fx.push({k:'ring',x:a.x,y:a.y-50,life:18,t:0,col:'#b48cff',small:1})}}}),
+  su:mv({n:'Thunder Step',d:'A thunderclap blasts everyone near him (unblockable, big knockback), and he teleports to the safest spot: the place on the ground or a fixed platform furthest from every enemy',su:12,ac:1,re:18,dmg:0,box:[0,0,0,0],inv:[0,30],
+    start:(s,a)=>say(s,a.x,a.y-135,'THUNDER STEP!','#9fd0ff',38),
+    tick:(s,a,f)=>{if(f!==12)return;const T=SQ.step;s.fx.push({k:'sqboom',x:a.x,y:a.y-46,r:T.r,life:24,t:0});s.shake=Math.max(s.shake,10);
+      for(const d of foes(s,a))if(d.st!=='ko'&&Math.hypot(d.x-a.x,(d.y-CH[d.c].h/2)-(a.y-46))<T.r+CH[d.c].w/2)hitF(s,a,d,{dmg:T.dmg*CH[a.c].pow,kb:T.kb,hs:30,unb:1,launch:1,src:'su',type:'Sonic',dir:d.x>=a.x?1:-1});
+      const[x,y]=squirmSafe(s,a);a.x=x;a.y=y;a.vx=0;a.vy=0;a.ground=true;const n=nearFoe(s,a,a.x,a.y);if(n)a.face=n.x>=a.x?1:-1;s.fx.push({k:'sqboom',x,y:y-46,r:60,life:18,t:0})}}),
+ })},
+{id:'nettor',name:'Nettor Hallos',player:'Dan',camp:'Descent into Avernus',role:'Rushdown',suAny:1,
+ passive:{n:'Deflect Missiles',d:'Monk reflexes: a 30% chance to swat an incoming projectile back at whoever threw it, at 60% damage (not supers)'},
+ col:'#c8742a',col2:'#8a3a1a',skin:'#d8a878',w:40,h:88,hp:900,spd:5.4,jump:-16,weight:0.9,pow:1.1,
+ blurb:'Way of the Drunken Master monk. Usually the one driving Fat Peggy, the party\'s infernal war machine.',
+ moves:Object.assign(normals({reach:0}),{
+  s1:mv({n:'Flurry of Blows',d:'A four-hit flurry, then he stumbles back out of reach',su:6,len:42,dmg:16,box:[8,-74,58,44],kb:[1,-1],hs:12,cd:180,
+    wins:[[6,9],[11,14],[16,19],[21,25]],dmgs:[16,16,16,30],kbs:[[1,-1],[1,-1],[1,-1],[7,-4]],mv:[[27,40,-8]]}),
+  s2:mv({n:'Stumble',d:'An erratic, lurching dash straight through people, untouchable for most of it, then he spins round and kicks',su:4,len:36,dmg:55,box:[8,-66,60,46],kb:[9,-4],hs:18,cd:240,inv:[4,20],
+    wins:[[22,27]],mv:[[4,22,12]],start:(s,a)=>say(s,a.x,a.y-120,'HIC!','#ffd34d',20),tick:(s,a,f)=>{const n=nearFoe(s,a,a.x,a.y);if(!n)return;if(f===4)a.md.side=Math.sign(n.x-a.x)||a.face;if(f>4&&f<21&&Math.sign(n.x-a.x)!==a.md.side&&Math.abs(n.x-a.x)>26){a.mf=21;a.vx=0} // stops once he's lurched through them
+      if(f===21)a.face=n.x>=a.x?1:-1}}), // then spins round for the kick
+  su:mv({n:'FAT PEGGY!',d:'He jumps in the party\'s infernal war machine and drives it across the whole stage, running over everyone on the ground. Unblockable: jump it',su:10,ac:1,re:10,len:150,dmg:0,box:[0,0,0,0],inv:[0,150],
+    start:(s,a)=>say(s,a.x,a.y-135,'FAT PEGGY!','#ff8a3d',44),
+    tick:(s,a,f)=>{if(f===10){const dir=a.face;a.md.ride=1;s.zones.push({k:'npeggy',o:a.i,dir,x:dir>0?WALL_L-60:WALL_R+60,t:0,life:400,hm:0});s.shake=Math.max(s.shake,6)}}}),
+ })},
 ];
 const MUSH={y:[-70,-46,-22],vy:[-0.45,0,0.45],w:34,h:28,sc:0.5,dmg:24,kb:[5,-1.5],kb3:[14,-4],hs3:22}; // Mush It: three waves (top, middle, bottom) spreading slightly; each 24 with a small shove, the third to hit the same target shoves like the old single wave (14,-4)
 {const h=CH.find(c=>c.id==='chief').moves.h;h.box=[8,-82,84,52]} // Big Chief's overhead sign chop: covers the whole arc, above his head down to the hip (was [8,-80,84,34])
@@ -868,7 +945,7 @@ function deal(s,a,d,dmg,src,type){
   if(d.ghost)return 0; // ghost brawl: ghosts have no health
   if(d.brk>0)return 0; // on a union break: untouchable
   type=type||dmgType(a,src);const rs=CH[d.c].resist;
-  const core=dmg*(a&&a!==d&&a.dragon>0?DRAGON_HIT:1)*(d.dragon>0?DRAGON_TAKE:1)*(a&&a!==d&&a.hawk>0?HAWK_MUL:1)*(a&&a!==d&&a.psycho>0?PSYCHO_MUL:1)*(d.reckless>0?1.2:1)*(d.pax>0?1+(PAX_MUL-1)*(d.paxLv||1):1)*(d.medx>0?MEDX_TAKE:1)*(a&&a!==d&&a.muddle>0?0.75:1);
+  let core=dmg*(a&&a!==d&&a.dragon>0?DRAGON_HIT:1)*(d.dragon>0?DRAGON_TAKE:1)*(a&&a!==d&&a.hawk>0?HAWK_MUL:1)*(a&&a!==d&&a.psycho>0?PSYCHO_MUL:1)*(d.reckless>0?1.2:1)*(d.pax>0?1+(PAX_MUL-1)*(d.paxLv||1):1)*(d.medx>0?MEDX_TAKE:1)*(a&&a!==d&&a.muddle>0?0.75:1)*(d.watched>0&&a&&a!==d&&CH[a.c].id==='kuck'?1+KUCK.watch.per*d.watched:1)*(kuckVeng(s,d)?KUCK.veng.take:1);
   const hexBonus=d.hex>0?core*0.16*(rs&&rs.Dark?1-rs.Dark:1):0; // the hex's extra damage is always Dark, whatever the hit was
   dmg=Math.round(core*(rs&&rs[type]?1-rs[type]:1)+hexBonus);
   if(d.temp>0&&dmg>0){const ab=Math.min(d.temp,dmg);d.temp-=ab;dmg-=ab;if(d.temp<=0)s.fx.push({k:'spark',x:d.x,y:d.y-60,col:'#c8c8d0',life:10,t:0})}
@@ -899,6 +976,8 @@ function hitF0(s,a,d,o){
   if(a&&a!==d&&a.hawk>0&&o.kb)o=Object.assign({},o,{kb:[o.kb[0]*HAWK_KB,o.kb[1]*HAWK_KB]}); // Big Chief in his hawk totem: hits knock back harder
   if(a&&a!==d&&CH[a.c].id==='owen'&&inSmoke(s,d,a.i)&&rngNext(s)<SMOKE_CRIT){o=Object.assign({},o,{dmg:o.dmg*2,kb:[o.kb[0]*1.25,o.kb[1]*1.25]});s.fx.push({k:'ocrit',x:d.x,y:d.y-50,life:20,t:0,col:'#ff5a3a'});say(s,d.x,d.y-135,'CRIT!','#ff5a3a',30)} // thermal scope
   const dir=o.dir||(d.x>=(a?a.x:d.x)?1:-1);
+  if(a&&a!==d&&!o.unb&&o.src!=='su'&&CH[d.c].id==='squirm'&&!(d.twoCd>0)&&d.face===dir&&d.st!=='ko'){d.twoCd=SQ.two;say(s,d.x,d.y-140,'BEHIND YOU, IDIOT!','#b48cff',20);s.fx.push({k:'spark',x:d.x-d.face*24,y:d.y-60,col:'#b48cff',life:12,t:0,big:true});return true} // Two Minds: Daevic blocks a hit from behind
+  if(o.melee&&a&&a!==d&&d.specter>0&&a.st!=='ko'&&CH[d.c].id==='squirm'){deal(s,d,a,SQ.spec.dmg*CH[d.c].pow,'s2','Dark');s.fx.push({k:'spark',x:a.x,y:a.y-60,col:'#7a5aa8',life:12,t:0})} // the specter lashes out at melee attackers
   if(d.counter>0&&!o.unb&&a&&a!==d){ // Feng's Divine Decree
     d.counter=0;say(s,d.x,d.y-120,'DIVINE DECREE!','#ffd34d',32);s.fx.push({k:'ring',x:d.x,y:d.y-50,life:20,t:0,col:'#ffd34d'});
     d.mf=Math.max(d.mf,CH[d.c].moves.s2.len-14);d.inv=12;s.freeze=8;
@@ -943,7 +1022,7 @@ function hitF0(s,a,d,o){
   if(d.steady>0&&STEADY_MODE==='B'){say(s,d.x,d.y-100,'STEADY','#f2b134',18);return true} // after a union break (B): takes the damage, doesn't flinch
   const w=CH[d.c].weight;
   d.st='hit';d.t=0;d.mv=null;d.hst=o.hs;d.counter=0;
-  const km=(CH[d.c].kbMul||1)*(d.steady>0?0:1);d.vx=dir*o.kb[0]/w*km;d.vy=o.kb[1]/w*km; // standing firm after a union break: no knockback
+  const km=(CH[d.c].kbMul||1)*(d.steady>0?0:1)*(kuckVeng(s,d)?KUCK.veng.kb:1);d.vx=dir*o.kb[0]/w*km;d.vy=o.kb[1]/w*km; // standing firm after a union break: no knockback
   if(d.vy<0)d.ground=false;
   d.launched=d.steady>0?0:(o.launch||o.kb[1]<=-7)?1:0;
   if(Math.abs(d.vx)>9)d.splat=0;
@@ -1006,7 +1085,8 @@ function tickMove(s,f){
   if(f.st!=='atk'||!f.mv)return;
   f.mf++;
   if(f.mv[0]==='a'){if(!f.ground)f.md.wasAir=1;else if(f.md.wasAir){f.st='idle';f.mv=null;return}}
-  if(f.mf>=m.len){f.st=f.ground?'idle':'jump';f.mv=null}
+  if(f.mf>=m.len){if(CH[f.c].id==='vega'&&(f.mv==='l'||f.mv==='h')&&f.ground&&!f.md.surged&&s.phase==='fight'&&rngNext(s)<VEGA.surge[f.mv]){const k=f.mv;startMove(s,f,k);f.md.surged=1;say(s,f.x,f.y-135,'ACTION SURGE!','#ffb347',22);return} // Vegagath goes again
+    f.st=f.ground?'idle':'jump';f.mv=null}
 }
 
 /* ---------- control: turns an input bitmask into actions ---------- */
@@ -1024,7 +1104,7 @@ function control(s,f,inp){
   if(pr&K.HP)return startMove(s,f,f.ground?'h':'ah');
   if(pr&K.LP)return startMove(s,f,f.ground?'l':'al');
   const wind=STAGE.hazard==='wind'&&s.hz?s.hz.w:0;
-  const spd=c.spd*(f.slow>0?(f.slowLv>1?0.35:0.55):1)*(f.haste>0?1.35:1)*(f.muddle>0?0.7:1)*(f.berserk>0?1.15:1)*(f.dragon>0?DRAGON_SPD:1)*(f.jet>0?JET_SPD:1)*(dir?1+WIND.k*wind*dir:1); // with the wind: faster; into it: slower
+  const spd=c.spd*(f.slow>0?(f.slowLv>1?0.35:0.55):1)*(f.haste>0?1.35:1)*(f.muddle>0?0.7:1)*(f.berserk>0?1.15:1)*(f.dragon>0?DRAGON_SPD:1)*(f.jet>0?JET_SPD:1)*(f.watch>0?KUCK.watch.spd:1)*(dir?1+WIND.k*wind*dir:1); // with the wind: faster; into it: slower
   if(f.ground){
     if(((pr&K.D)||((inp&(K.B|K.D))&&(pr&K.U)))&&onPlat(f)){f.drop=14;f.ground=false;f.y+=2;f.st='jump';return} // tap Down on a platform to drop through (Block + Jump still works too)
     if((inp&(K.B|K.D))&&!(f.berserk>0)&&f.shield>0){f.st='block';f.vx=0;return} // Block, or holding Down, blocks
@@ -1058,6 +1138,8 @@ function phys(s,f){
   if(f.y>=fy){f.y=fy;f.vy=0;f.ground=true}
   else if(f.vy>=0){for(const p of PLATS){const sy=platY(p,f.x),tol=p.tilt!==undefined&&wasGround?10:0;if((f.drop<=0||p.solid)&&py<=sy+tol&&f.y>=sy-tol&&f.x>p.x-6&&f.x<p.x+p.w+6){f.y=sy;f.vy=0;f.ground=true;break}}} // a tilting platform carries whoever stands on it
   if(!f.ground&&wasGround&&f.vy>=0&&f.drop<=0&&STAGE.slope&&f.y>=fy-10&&f.st!=='hit'){f.y=fy;f.vy=0;f.ground=true} // walk down a slope without taking off
+  for(const z of s.zones)if(z.k==='kdavid'&&z.ground&&z.o!==f.i&&sideOf(s,s.f[z.o])!==sideOf(s,f)&&!f.ghost&&f.st!=='grabbed'){const hw2=c.w/2,b=kuckStatueBox(z); // statue David: enemies can't walk through him (hop over)
+    if(f.y>b[1]+3&&f.y-c.h<z.y&&f.x+hw2>b[0]&&f.x-hw2<b[0]+b[2]){const l=px0<z.x||(px0===z.x&&f.x<z.x);f.x=l?b[0]-hw2:b[0]+b[2]+hw2;if(f.vx*(l?1:-1)>0)f.vx=0}}
   if(STAGE.blocks)for(const b of STAGE.blocks){const hw2=c.w/2; // solid fallen trees: you can't walk through them
     if(f.y>b.top+3&&f.x+hw2>b.x0&&f.x-hw2<b.x1){
       if((f.st==='atk'&&Math.abs(f.vx)>=5)||(CH[f.c].id==='dask'&&wasGround&&f.st==='walk')){if(f.c===1&&f.st==='atk')continue;if(f.x>b.x0-6&&f.x<b.x1+6){f.y=b.top;f.vy=0;f.ground=true}continue} // only hop up once the feet are over the log (else keep moving in, unpushed) // charges/dashes vault the logs, Dask just storms up over them; Madog's charge goes straight through // charges and dashes vault up onto the logs; Madog just goes straight through them
@@ -1087,6 +1169,7 @@ function separate(s){
   if(multi(s)){let mv=false;for(let i=0;i<s.f.length;i++)for(let j=i+1;j<s.f.length;j++)if(sepPair(s,s.f[i],s.f[j]))mv=true;
     if(mv)for(const f of s.f){const hw=CH[f.c].w/2;f.x=Math.max(WALL_L+hw,Math.min(WALL_R-hw,f.x))}return}
   const[a,b]=s.f;if(a.st==='grabbed'||b.st==='grabbed'||a.st==='ko'||b.st==='ko')return;
+  if(nettorThru(a)||nettorThru(b))return; // Nettor stumbling through
   if((a.st==='atk'&&a.md&&a.md.drag>=0)||(b.st==='atk'&&b.md&&b.md.drag>=0))return; // Pain Train carries them: don't shove the train back
   const ra=hurt(a),rb=hurt(b);
   if(!(ra[1]<rb[1]+rb[3]&&ra[1]+ra[3]>rb[1]))return;
@@ -1097,6 +1180,7 @@ function separate(s){
   for(const f of s.f){const hw=CH[f.c].w/2;f.x=Math.max(WALL_L+hw,Math.min(WALL_R-hw,f.x))}
 }
 function sepPair(s,a,b){ // 3-4 players: the same push-apart for one pair (a has the lower index)
+  if(nettorThru(a)||nettorThru(b))return false;
   if(!a.ghost!==!b.ghost)return false;if(a.st==='grabbed'||b.st==='grabbed'||a.st==='ko'||b.st==='ko')return false;
   if((a.st==='atk'&&a.md&&a.md.drag>=0)||(b.st==='atk'&&b.md&&b.md.drag>=0))return false;
   const ra=hurt(a),rb=hurt(b);if(!(ra[1]<rb[1]+rb[3]&&ra[1]+ra[3]>rb[1]))return false;
@@ -1111,6 +1195,8 @@ function tickProj(s){
     const owner=s.f[p.o];
     for(const tgt of p.bad?[owner]:foes(s,owner)){
     if(p.life>0&&!p.noHit&&p.miss!==tgt.i&&hitsF([p.x-p.w/2,p.y-p.h/2,p.w,p.h],tgt)){
+      if(CH[tgt.c].id==='nettor'&&!p.ndr&&!p.bad&&p.src!=='su'&&p.kind!=='david'&&!p.walker&&tgt.st!=='ko'){p.ndr=1;if(rngNext(s)<NET.deflect){ // Deflect Missiles: swatted back at the thrower
+        p.o=tgt.i;p.vx=-p.vx;p.vy=Math.min(p.vy,0);p.dmg*=NET.back;p.x+=p.vx*2;p.x0=p.x;say(s,tgt.x,tgt.y-CH[tgt.c].h-30,'DEFLECTED!','#ffd34d',22);s.fx.push({k:'spark',x:p.x,y:p.y,col:'#ffd34d',life:10,t:0,big:true});break}}
       if(hitF(s,p.bad?null:owner,tgt,{type:p.type,dmg:p.dmg*CH[owner.c].pow*(p.falloff?Math.max(0.4,1-p.t*Math.abs(p.vx)/600):1)*(p.eagle?1+Math.min(DINO.eagle,Math.abs(p.x-p.x0)/DINO.eagleDist*DINO.eagle):1),kb:p.mush&&p.gh>=2?MUSH.kb3:p.kb,hs:p.mush&&p.gh>=2?MUSH.hs3:p.hs,launch:p.launch,unb:p.unb,dir:p.vx>=0?1:-1,src:p.src,shieldMul:p.shieldMul||(p.kind==='bullet'?0.5:1)})){if(p.kind==='frost'){p.fadeA=Math.max(0,Math.min(1,1.6-1.6*p.t/(p.life+2)));p.fadeF=Math.min(5,Math.floor(p.t/p.life*7));p.noHit=1;p.life=p.fadeLen=FROST_FADE;p.vx*=0.3;p.vy*=0.3}else p.life=0; // frost puffs that land lose their hitbox and fade out instead of vanishing
         if(p.grp&&!p.mush)for(const q of s.proj)if(q.grp===p.grp)q.noHit=1;if(p.mush)for(const q of s.proj)if(q.grp===p.grp)q.gh++;if(p.kind==='deer')s.fx.push({k:'cdpoof',x:p.x,y:p.y+34+(p.n%2)*16,dir:Math.sign(p.vx)||1,red:p.n===0,life:24,t:0});if(p.kind==='shiplaser')s.fx.push({k:'olhit',x:p.x,y:p.y,life:16,t:0});if(p.kind==='plasma')s.fx.push({k:'hrplasma',x:p.x,y:p.y,life:18,t:0});
         if(p.onHit&&(tgt.st==='hit'||tgt.st==='down'||tgt.shrugT===s.frame||(p.pierce&&(tgt.st==='bstun'||tgt.st==='stun'))))p.onHit(s,owner,tgt,p)}
@@ -1128,6 +1214,17 @@ function tickProj(s){
       if(!an&&STAGE.walls)for(const w of STAGE.walls)if((w.door===undefined||doorClosed(s,w.door))&&(p.x-p.vx-w.x)*(p.x-w.x)<=0&&p.y>w.y0&&p.y<w.y1){an={x:w.x,y:p.y,side:Math.sign(p.vx)||1};break}
       if(!an&&STAGE.ceil!==undefined&&p.y<STAGE.ceil+4)p.life=0;
       if(an){p.life=0;s.fx.push({k:'spark',x:an.x,y:an.y,col:'#c8a06a',life:12,t:0});if(ok)own.md.anc=an}}
+    if(p.life>0&&p.src!=='su'&&p.kind!=='shiplaser')for(const z of s.zones)if(z.k==='kdavid'&&z.ground&&z.o!==p.o&&s.f[z.o]&&sideOf(s,s.f[z.o])!==sideOf(s,owner)&&ov([p.x-p.w/2,p.y-p.h/2,p.w,p.h],kuckStatueBox(z))){p.life=0;s.fx.push({k:'spark',x:p.x,y:p.y,col:'#e8d0a8',life:10,t:0});break} // statue David soaks enemy shots
+    if(p.kind==='david'){ // stuffed David: bounces off the side walls, stands where he lands
+      if(p.life>0&&(p.x<WALL_L+12&&p.vx<0||p.x>WALL_R-12&&p.vx>0))p.vx=-p.vx*0.4;
+      if(p.life>0&&p.vy>0){const bot=p.y+p.h/2;let gy=null;for(const pl of PLATS){const sy=platY(pl,p.x);if(bot>=sy&&bot-p.vy<=sy+1&&p.x>pl.x&&p.x<pl.x+pl.w){gy=sy;break}}
+        if(gy===null&&bot>=floorY(p.x))gy=floorY(p.x);if(gy!==null){p.life=0;p.landY=gy}}
+      if(p.life<=0){const own=s.f[p.o],land=p.landY!==undefined;s.zones.push({k:'kdavid',o:p.o,x:Math.max(WALL_L+20,Math.min(WALL_R-20,p.x)),y:land?p.landY:Math.min(p.y+p.h/2,floorY(p.x)),vy:land?0:-3,ground:land?1:0,life:Math.max(1,own.cd.s1),t:0,face:Math.sign(p.vx)||1});if(land)s.fx.push({k:'dust',x:p.x,y:p.landY,life:14,t:0})}}
+    if(p.walker&&p.life>0){ // Kuck's imp: runs along whatever it lands on, drops off ledges
+      if(p.vy>0){const bot=p.y+p.h/2;let gy=null;for(const pl of PLATS){const sy=platY(pl,p.x);if(bot>=sy&&bot-p.vy<=sy+1&&p.x>pl.x&&p.x<pl.x+pl.w){gy=sy;break}}
+        if(gy===null&&bot>=floorY(p.x))gy=floorY(p.x);if(gy!==null){p.y=gy-p.h/2;p.vy=0}}
+      if(p.x<WALL_L+8||p.x>WALL_R-8)p.life=0}
+    if(p.life<=0&&p.kind==='imp')s.fx.push({k:'kimpboom',x:p.x,y:p.y,life:22,t:0});
     if(p.x<-60||p.x>W+60||p.y>floorY(p.x)+10)p.life=0;
     if(STAGE.walls&&p.life>0&&p.kind!=='shiplaser')for(const w of STAGE.walls)if(w.door!==undefined&&doorClosed(s,w.door)&&(p.x-p.vx-w.x)*(p.x-w.x)<=0&&p.y>w.y0&&p.y<w.y1){p.life=0;s.fx.push({k:'spark',x:w.x,y:p.y,col:'#cfd6e0',life:10,t:0})}
     if(p.t===1&&p.kind==='bullet')s.fx.push({k:'smuzzle',x:p.x,y:p.y,life:10,t:0,dir:Math.sign(p.vx)||1});
@@ -1142,6 +1239,17 @@ function tickProj(s){
     if(z.k==='stink'){
       z.life--;z.tk++;
       for(const tgt of TG)if(hitsF([z.x-z.w/2,z.y-z.h,z.w,z.h],tgt)&&tgt.st!=='ko'&&!doorBetween(s,z.x,tgt.x)){tgt.slow=Math.max(tgt.slow,12);if(z.tk%30===0&&s.phase==='fight'){deal(s,owner,tgt,12,'s2');s.fx.push({k:'spark',x:tgt.x,y:tgt.y-70,col:'#9bd35a',life:10,t:0})}}
+    }else if(z.k==='npeggy'){ // Nettor drives Fat Peggy across the whole stage
+      const P2=NET.peggy;z.t++;z.x+=z.dir*P2.spd;const gy=floorY(Math.max(WALL_L,Math.min(WALL_R,z.x)));
+      if(owner.st==='atk'&&owner.mv==='su'){owner.x=Math.max(WALL_L+20,Math.min(WALL_R-20,z.x));owner.y=gy<H-5?gy:FLOOR;owner.vx=0;owner.vy=0;owner.ground=true;owner.inv=Math.max(owner.inv,2);owner.mf=Math.min(owner.mf,20)}
+      for(const d of foes(s,owner)){if(d.st==='ko'||(z.hm>>d.i)&1)continue;if(hitsF([z.x-P2.w/2,(gy<H-5?gy:FLOOR)-P2.h,P2.w,P2.h],d)){z.hm|=1<<d.i;hitF(s,owner,d,{dmg:P2.dmg*CH[owner.c].pow,kb:P2.kb,hs:30,unb:1,launch:1,src:'su',dir:z.dir});s.shake=Math.max(s.shake,8)}}
+      if(z.dir>0?z.x>WALL_R+80:z.x<WALL_L-80){z.life=0;if(owner.st==='atk'&&owner.mv==='su'){owner.md.ride=0;owner.x=z.dir>0?WALL_R-40:WALL_L+40;owner.y=floorY(owner.x);owner.mf=CH[owner.c].moves.su.len-10;owner.inv=Math.max(owner.inv,20)}}
+    }else if(z.k==='kdavid'){ // statue David standing where he landed: Kuck picks him up by walking over him (cooldown reset); gone when the cooldown runs out
+      z.t++;z.life=owner.cd.s1>0?Math.max(1,owner.cd.s1):0;
+      if(!z.ground){z.vy+=0.5;const ny=z.y+z.vy;let land=null;for(const p of PLATS){const sy=platY(p,z.x);if(z.vy>0&&z.y<=sy&&ny>=sy&&z.x>p.x&&z.x<p.x+p.w){land=sy;break}}
+        if(land===null&&ny>=floorY(z.x))land=floorY(z.x);if(land!==null){z.y=land;z.vy=0;z.ground=1}else z.y=ny}
+      if(owner.st!=='ko'&&z.t>KUCK.pickAfter&&Math.abs(owner.x-z.x)<KUCK.pickR&&Math.abs(owner.y-z.y)<60){z.life=0;owner.cd.s1=0;say(s,owner.x,owner.y-115,"C'MERE, DAVID",'#e8d0a8',20)}
+      else if(z.life<=0)s.fx.push({k:'dust',x:z.x,y:z.y,life:14,t:0})
     }else if(z.k==='dfire'){ // Dino's fire arrow: flames on the ground
       z.life--;z.tk++;
       for(const tgt of TG)if(tgt.st!=='ko'&&hitsF([z.x-z.w/2,z.y-z.h,z.w,z.h],tgt)){const k=tgt.i,n=(z.hc[k]=(z.hc[k]||0)+1);if(n%DINO.fire.every===1&&s.phase==='fight'){deal(s,owner,tgt,DINO.fire.tick,'s2','Fire');s.fx.push({k:'spark',x:tgt.x,y:tgt.y-40,col:'#ff9a3a',life:10,t:0})}}
@@ -1273,13 +1381,17 @@ function step(s,inputs){
     if(s.phase==='fight'&&f.st!=='ko'){const foe=multi(s)?(f.lastBy!==undefined?s.f[f.lastBy]:null):s.f[1-f.i]; // damage over time: Calder's scorpion venom, Tedd's burning
       if(f.poison>0&&f.poison%30===1){deal(s,foe,f,10*(f.poisonLv||1),'s2','Poison');s.fx.push({k:'spark',x:f.x,y:f.y-60,col:'#9bd35a',life:10,t:0})}
       if(f.burn>0&&f.burn%20===1){deal(s,foe,f,8,'s1','Fire');s.fx.push({k:'spark',x:f.x,y:f.y-60,col:'#ff8a1a',life:10,t:0})}}
-    for(const k of['hst','bst','inv','counter','hex','slow','haste','drop','muddle','walkArmorCd','reckless','bubLock','poison','burn','pax','berserk','steady','dragon','guided'])if(f[k]>0)f[k]--;
+    for(const k of['hst','bst','inv','counter','hex','slow','haste','drop','muddle','walkArmorCd','reckless','bubLock','poison','burn','pax','berserk','steady','dragon','guided','twoCd','specter'])if(f[k]>0)f[k]--;
     if(f.hawk>0)f.hawk--;if(f.tempT>0&&--f.tempT===0&&f.temp>0){f.temp=0;s.fx.push({k:'spark',x:f.x,y:f.y-60,col:'#d8a060',life:12,t:0})} // the bear's shield fades
     if(!(f.poison>0))f.poisonLv=0;if(!(f.pax>0))f.paxLv=0;if(!(f.slow>0))f.slowLv=0; // stacks end with their effect
     for(let q=0;q<5;q++)if(f.dfx[q]>0)f.dfx[q]--;
     if(s.phase==='fight'&&CH[f.c].id==='chief'&&!f.brkUsed&&f.hp>0&&f.hp<f.maxHp*0.3&&['idle','walk','jump','block'].includes(f.st)&&f.ground){ // Union Break
       f.brkUsed=1;f.brk=UNION_BREAK;f.st='break';f.t=0;f.vx=0;f.mv=null;say(s,f.x,f.y-130,'UNION BREAK!','#f2b134',36);s.fx.push({k:'ring',x:f.x,y:f.y-40,life:20,t:0,col:'#f2b134',small:true})}
     if(f.dactCd>0)f.dactCd--;
+    if(f.watchT>0&&--f.watchT===0)f.watched=0; // Watched stacks wear off together
+    if(f.watch>0){f.watch--;const W2=KUCK.watch; // Kuck's super: a psychic pulse every second
+      if(f.watch%W2.every===0&&f.watch>0&&s.phase==='fight'&&f.st!=='ko'){s.fx.push({k:'kpulse',x:f.x,y:f.y-50,r:W2.r,life:24,t:0});
+        for(const d of foes(s,f))if(d.st!=='ko'&&Math.hypot(d.x-f.x,(d.y-CH[d.c].h/2)-(f.y-46))<W2.r+CH[d.c].w/2){deal(s,f,d,W2.dmg*CH[f.c].pow,'su','Psychic');d.watched=Math.min(W2.max,(d.watched||0)+1);d.watchT=W2.last;s.fx.push({k:'spark',x:d.x,y:d.y-70,col:'#e8e4ff',life:12,t:0})}}}
     if(s.phase==='fight'&&f.st!=='ko'&&CH[f.c].id==='calder'){ // Field Chemist
       if(f.craftT===undefined){f.craftFull=CRAFT_MIN+Math.floor(rngNext(s)*CRAFT_VAR);f.craftT=f.craftFull}
       if(f.jet>0)f.jet--;if(f.medx>0)f.medx--;if(f.psycho>0)f.psycho--;
@@ -1371,7 +1483,7 @@ setStage(0);
 // Where each special is useful [min distance, max distance], so the CPU fires them when they can actually land
 const SPECIAL_RANGE={frica:{s1:[0,120],s2:[0,700]},madog:{s1:[60,420],s2:[0,140]},feng:{s1:[140,650],s2:[0,700]},
   tenebrund:{s1:[0,85],s2:[0,160]},salty:{s1:[120,750],s2:[90,520]},dask:{s1:[0,130],s2:[110,330]},
-  calder:{s1:[220,850],s2:[90,600]},dino:{s1:[160,900],s2:[100,480]},heavyrail:{s1:[120,700],s2:[60,250]},owen:{s1:[90,600],s2:[0,420]},tedd:{s1:[40,420],s2:[0,95]},bof:{s1:[60,230],s2:[0,125]},chief:{s1:[60,620]},soren:{s1:[30,170],s2:[160,720]}};
+  calder:{s1:[220,850],s2:[90,600]},dino:{s1:[160,900],s2:[100,480]},kuck:{s1:[140,520],s2:[60,700]},vega:{s1:[120,700],s2:[80,600]},squirm:{s1:[160,800],s2:[0,260]},nettor:{s1:[0,110],s2:[60,230]},heavyrail:{s1:[120,700],s2:[60,250]},owen:{s1:[90,600],s2:[0,420]},tedd:{s1:[40,420],s2:[0,95]},bof:{s1:[60,230],s2:[0,125]},chief:{s1:[60,620]},soren:{s1:[30,170],s2:[160,720]}};
 // react: [fastest, slowest] frames between decisions (60 frames = 1s). Humans react in roughly 12-18 frames.
 const CPU_DIFF={easy:{react:[22,36],block:0.15,aggr:0.35,adapt:0.3},normal:{react:[15,26],block:0.45,aggr:0.55,adapt:0.7},hard:{react:[11,19],block:0.75,aggr:0.75,adapt:1}};
 function cpuInput(s,i,diff,mem){ // free facing: when the CPU attacks, blocks or uses a special it turns to face its opponent first (the brain was written for auto-facing)
@@ -1927,6 +2039,7 @@ const AN={
   flop:{w:{fh:0.8,fk:-1.5,bh:0.5,bk:-1.5,fs:2.6,bs:2.5,lean:0.1},h:{fs:2.9,fe:0.1,bs:2.8,be:0.1,lean:0.55,fh:-0.3,fk:-0.4,bh:-0.5,bk:-0.4}},
   dashback:{w:{lean:-0.3},h:{lean:-0.38,fs:-0.4,fe:0.6,bs:-0.9,be:0.4,fh:-0.6,fk:-0.5,bh:0.8,bk:-1.0,ht:-0.2}},
   rush:{w:{fs:2.9,fe:0.5,bs:2.5,be:0.6,lean:-0.12},h:{fs:0.9,fe:0.1,bs:0.8,be:0.3,lean:0.35,fh:0.8,fk:-0.3},alt:'swing2',run:1},
+  punt:{w:{fh:-0.6,fk:-1.4,bh:0.1,bk:-0.3,lean:0.08,fs:0.6,fe:0.8,bs:-0.4,be:0.6},h:{fh:1.5,fk:-0.15,bh:-0.15,bk:-0.2,lean:-0.22,fs:-0.5,fe:0.6,bs:0.9,be:0.7}},
 };
 const ANIMS={
   frica:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'lunge',s2:'summon',su:'cast'},
@@ -1943,6 +2056,10 @@ const ANIMS={
   chief:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'summon',s2:'summon',su:'summon'},
   soren:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'cast',s2:'cast',su:'flex'},
   dino:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'shoot',s2:'shoot',su:'shoot'},
+  kuck:{l:'jab',h:'thrust',al:'jab',ah:'slam',s1:'throwb',s2:'punt',su:'throwb'},
+  squirm:{l:'jab',h:'swing',al:'jab',ah:'slam',s1:'shoot',s2:'flex',su:'flex'},
+  nettor:{l:'jab',h:'punt',al:'jab',ah:'slam',s1:'jab',s2:'rush',su:'flex'},
+  vega:{l:'thrust',h:'swing',al:'jab',ah:'slam',s1:'throwb',s2:'rush',su:'flex'},
 };
 function runLegs(p,o,amp){const s=Math.sin(p);o.fh=0.15+amp*s;o.bh=0.15-amp*s;o.fk=-0.25-0.9*Math.max(0,Math.sin(p+1.7));o.bk=-0.25-0.9*Math.max(0,Math.sin(p+1.7+Math.PI));return o}
 function poseOf(f){
@@ -2021,6 +2138,29 @@ function drawRig(f,o){
   g.restore();
   if(R.after)R.after(o,f,t,hipY);
 }
+function vegaGlaive(){poly([-2,30,2,30,2,-52,-2,-52],'#5a3a22',1);poly([-4,-50,4,-50,4,-54,-4,-54],'#8a8f96',1);g.fillStyle='#c8ced6';g.strokeStyle='#222';g.lineWidth=1.2;g.beginPath();g.moveTo(-3,-54);g.quadraticCurveTo(-4,-74,6,-92);g.quadraticCurveTo(12,-72,4,-54);g.closePath();g.fill();g.stroke()} // long haft, curved blade on top
+function kuckDoll(x,y,h,rot,flip){ // stuffed David (feet at x,y, h tall): the Fuck Den's own sprite when the art is on, else a stitched-up gnome
+  g.save();g.translate(x,y);if(rot)g.rotate(rot);if(flip)g.scale(-1,1);
+  try{
+  if(pixelArt){let im=DAVID_IMG['fuckden_david.png'];if(!im){im=DAVID_IMG['fuckden_david.png']=new Image();im.src='fuckden_david.png'}
+    if(im.complete&&im.naturalWidth){const k=h/im.height,sm=g.imageSmoothingEnabled;g.imageSmoothingEnabled=false;g.drawImage(im,-im.width*k/2,-h,im.width*k,h);g.imageSmoothingEnabled=sm;return}}
+  const u=h/62;g.scale(u,u);
+  seg(-5,-12,-6,-1,6,'#5a3a1e');seg(5,-12,6,-1,6,'#5a3a1e');
+  poly([-11,-36,11,-36,12,-12,-12,-12],'#4a6ab0',1.5);g.fillStyle='#c9a24a';g.fillRect(-11,-22,22,3);
+  g.strokeStyle='#e8d0a8';g.lineWidth=1;g.setLineDash([2,2]);g.beginPath();g.moveTo(0,-35);g.lineTo(0,-13);g.stroke();g.setLineDash([]); // stitches
+  circ(0,-42,9,'#f0c8a0',1.5);poly([-8,-41,0,-24,8,-41],'#e8e8e8',1);poly([-10,-46,0,-66,10,-46],'#c0392b',1.5);
+  g.strokeStyle='#111';g.lineWidth=1.4;g.beginPath();g.moveTo(-5,-46);g.lineTo(-2,-43);g.moveTo(-2,-46);g.lineTo(-5,-43);g.moveTo(2,-46);g.lineTo(5,-43);g.moveTo(5,-46);g.lineTo(2,-43);g.stroke() // X eyes
+  }finally{g.restore()}}
+function kuckImp(t,run){ // the imp in its David disguise (feet at 0,0, facing right): red skin, bat wings, a fake beard and a paper hat
+  const r=Math.sin(t*0.7)*run;g.lineCap='round';
+  seg(-4,-12,-4-r*6,0,4,'#8a1a1a');seg(4,-12,4+r*6,0,4,'#8a1a1a');
+  poly([-4,-22,-22,-34,-16,-20,-20,-14],'#5a1010',1.2);
+  ell(0,-18,9,9,'#c4302b',1.5);circ(3,-31,8,'#c4302b',1.5);
+  poly([-2,-37,-5,-44,1,-38],'#e8d6b0',1);poly([6,-38,9,-45,9,-36],'#e8d6b0',1);
+  poly([-5,-36,4,-54,12,-35],'#c0392b',1.2); // David's hat, slipping
+  poly([-1,-29,4,-14,10,-29],'#e8e8e8',1); // fake beard on a string
+  g.fillStyle='#ffd34d';g.fillRect(5,-34,3,3);
+  seg(-8,-20,-18,-12+r*4,2,'#8a1a1a');poly([-18,-12+r*4,-22,-8+r*4,-15,-10+r*4],'#5a1010',0.8)} // tail
 function bubbles(bx,by,f,t,firing){ // Salty's monkey
   g.save();g.translate(bx,by);
   seg(-6,6,-14,14+Math.sin(t*0.2)*4,2.2,'#7a4a24');
@@ -2377,6 +2517,65 @@ dino:{th:18,sh:18,T:30,neck:3,hr:11.5,ua:15,fa:15,aw:8,lw:9,foot:9,shX:2,shY:5,p
     if(pull>3){const tip=a==='s2'?DINO_TRICKS[f.trick||0]:null;seg(-2-pull,0,22,0,1.6,'#8a6a42');poly([22,-3,28,0,22,3],tip==='fire'?'#ff7a2a':'#b8bcc6',1);
       if(a==='su'&&!PX){g.globalAlpha=0.5+0.3*Math.sin(t*0.8);circ(26,0,4,'#ff5a5a',0);g.globalAlpha=1}}
     g.restore()}},
+kuck:{th:18,sh:18,T:31,neck:3,hr:12,ua:15,fa:15,aw:8,lw:10,foot:9,shX:2,shY:5,pants:'#24202a',pantsB:'#1b1820',boot:'#120f14',
+  sleeve:'#2e2834',sleeveB:'#231e28',fore:'#2e2834',foreB:'#231e28',glove:'#3a2020',grip:-0.4,glowCol:'#ff5a2a',
+  behind(o,f,t,hipY){ // long Zhentarim coat tails; stuffed David strapped across his back when he has him
+    g.save();g.translate(0,hipY);g.rotate(o.lean);const sw=f.st==='walk'?Math.sin(t*0.3)*3:0;
+    if(S&&kuckHome(S,f)&&!(f.st==='atk'&&f.mv==='s1'&&f.mf>=4)&&f.st!=='ko')kuckDoll(-14,-6,40,-0.5);
+    shape(()=>{g.moveTo(-12,-4);g.lineTo(10,-4);g.lineTo(9+sw,24);g.lineTo(-16+sw,26);g.closePath()},'#2a2430',1.5);
+    g.fillStyle='#8a1c24';g.fillRect(-15+sw,22,24,3);g.restore()},
+  torso(o,f){
+    poly([-12,-30,12,-30,13,0,-12,0],'#2a2430',1.5); // black leather coat
+    shape(()=>{g.moveTo(-2,-30);g.lineTo(6,-30);g.lineTo(2,-14);g.closePath()},'#8a1c24',1); // red waistcoat in the open collar
+    g.fillStyle='#8a1c24';g.fillRect(-12,-30,3,30);
+    poly([-13,-4,13,-4,13,0,-13,0],'#120f14',1);g.fillStyle='#c9a227';g.fillRect(-2,-4,4,4);
+    g.save();g.translate(-4,-20);g.fillStyle='#111';g.beginPath();g.moveTo(-5,0);g.quadraticCurveTo(0,-6,5,0);g.quadraticCurveTo(0,-2,-5,0);g.fill();g.fillStyle='#c9a227';g.fillRect(-1,-2,2,2);g.restore()}, // Zhentarim winged snake badge
+  head(o,f,t){const r=12;
+    circ(0,-r,r,'#d9b08c');
+    shape(()=>{g.moveTo(-r-1,-r+2);g.quadraticCurveTo(-r,-2*r-3,4,-2*r-2);g.quadraticCurveTo(r+2,-2*r,r,-r-4);g.lineTo(-2,-r-6);g.lineTo(-6,-r+3);g.closePath()},'#141018',1.5); // slicked-back hair
+    poly([-4,-2*r-1,-8,-2*r-8,-1,-2*r],'#3a2020',1);poly([5,-2*r,4,-2*r-8,9,-2*r+1],'#3a2020',1); // little fiend horns
+    g.fillStyle=f.st==='atk'||(S&&S.frame%120<6)?'#ff5a2a':'#7a1010';g.fillRect(5,-r-2,3,2); // the patron's glint
+    g.strokeStyle='#141018';g.lineWidth=1.4;g.beginPath();g.moveTo(3,-r-5);g.lineTo(9,-r-4);g.stroke();
+    poly([4,-6,11,-6,8,0,4,-1],'#141018',1); // goatee
+    g.strokeStyle='#6a3a2a';g.lineWidth=1.2;g.beginPath();g.moveTo(5,-6);g.lineTo(10,-7);g.stroke()}, // smirk
+  weapon(o,f,t){ // a Zhent stiletto
+    poly([-2,-3,2,-3,2,6,-2,6],'#3a2020',1);poly([-5,-4,5,-4,5,-2,-5,-2],'#c9a227',1);poly([-1.5,-4,1.5,-4,0,-22],'#d6dde5',1)},
+  front(o,f,t,fa){ // stuffed David held up as a shield, or in his hand on the way to being thrown
+    if(f.st==='atk'&&f.mv==='s1'&&f.mf<8&&f.mf>=4)kuckDoll(fa.x,fa.y+16,44,-0.4)}},
+squirm:{th:18,sh:18,T:30,neck:3,hr:12,ua:14,fa:14,aw:8,lw:9,foot:9,shX:2,shY:5,pants:'#2a2230',pantsB:'#201a26',boot:'#1a1418',
+  sleeve:'#3a2a4a',sleeveB:'#2e2238',fore:'#3a2a4a',foreB:'#2e2238',glove:'#e0b896',grip:-0.3,
+  behind(o,f,t,hipY){g.save();g.translate(0,hipY);g.rotate(o.lean);poly([-14,-6,-10,-8,-2,22,-6,24],'#5a5a66',1);g.fillStyle='#3a2a1a';g.fillRect(-12,-10,6,5);g.restore()}, // the hexblade he never draws, still sheathed
+  torso(o,f){poly([-12,-30,12,-30,13,0,-12,0],'#3a2a4a',1.5);poly([-3,-30,3,-30,2,0,-2,0],'#6a4a8a',1);g.fillStyle='#120e16';g.fillRect(-12,-4,25,4)},
+  head(o,f,t){const r=12;circ(0,-r,r,'#e0b896');
+    shape(()=>{g.moveTo(-r-1,-r);g.lineTo(-r+2,-2*r-4);g.lineTo(-4,-2*r-1);g.lineTo(0,-2*r-6);g.lineTo(5,-2*r-1);g.lineTo(r,-2*r-3);g.lineTo(r-2,-r-5);g.lineTo(-5,-r-3);g.closePath()},'#4a3020',1.2); // messy hair
+    g.fillStyle='#111';g.fillRect(5,-r-2,3,3);g.fillStyle='#b48cff';g.fillRect(6,-r-2,1,1);
+    g.strokeStyle='#6a4030';g.lineWidth=1.2;g.beginPath();g.moveTo(4,-5);g.lineTo(10,-6+Math.sin(t*0.4)*1.5);g.stroke()}, // muttering
+  weapon(o,f,t){const p=0.7+0.3*Math.sin(t*0.3);g.save();g.globalAlpha=0.85;g.fillStyle='#8a5ad8';g.beginPath();g.arc(0,-4,5*p+2,0,7);g.fill();g.fillStyle='#e8d8ff';g.beginPath();g.arc(0,-4,2.5,0,7);g.fill();g.restore()}}, // eldritch flicker in his hand
+nettor:{th:18,sh:18,T:30,neck:3,hr:12,ua:14,fa:14,aw:9,lw:10,foot:9,shX:2,shY:5,pants:'#c8742a',pantsB:'#a85e20',boot:'#d8a878',
+  sleeve:'#d8a878',sleeveB:'#c49464',fore:'#d8a878',foreB:'#c49464',glove:'#e8e0d0',grip:-0.3,
+  behind(o,f,t,hipY){g.save();g.translate(0,hipY);g.rotate(o.lean);g.fillStyle='#8a5a2a';g.beginPath();g.ellipse(-12,-4,6,8,0.3,0,7);g.fill();g.fillStyle='#5a3a1a';g.fillRect(-14,-14,4,4);g.restore()}, // gourd of booze on his belt
+  torso(o,f){poly([-12,-30,12,-30,13,0,-12,0],'#d8a878',1.5);shape(()=>{g.moveTo(-12,-30);g.lineTo(-2,-30);g.lineTo(13,-2);g.lineTo(13,0);g.lineTo(-12,0);g.closePath()},'#c8742a',1.5);g.fillStyle='#8a3a1a';g.fillRect(-12,-5,25,5)}, // robe over one shoulder, sash
+  head(o,f,t){const r=12,sw=Math.sin(t*0.07)*0.12;g.rotate(sw);circ(0,-r,r,'#d8a878');circ(-2,-2*r-2,4,'#2a1a10');
+    g.fillStyle='#111';g.fillRect(5,-r-2,3,2);g.fillStyle='#e0604a';g.beginPath();g.arc(10,-r+3,2.6,0,7);g.fill(); // red nose
+    g.strokeStyle='#5a3020';g.lineWidth=1.3;g.beginPath();g.arc(6,-5,3,0.3,2.6);g.stroke()},
+  weapon(){},
+  front(){}},
+vega:{th:22,sh:21,T:37,neck:3,hr:13,ua:17,fa:17,aw:11,lw:13,foot:11,shX:2,shY:5,pants:'#3a3028',pantsB:'#2e261f',boot:'#2a1e14',
+  sleeve:'#9aa3a8',sleeveB:'#848d92',fore:'#9aa3a8',foreB:'#848d92',glove:'#9aa3a8',grip:-0.5,
+  behind(o,f){const nk=f.st==='atk'&&f.mv==='su';this.pants=nk?'#9aa3a8':'#3a3028';this.pantsB=nk?'#848d92':'#2e261f';this.boot=nk?'#848d92':'#2a1e14'}, // stripped for The Helicopter
+  torso(o,f){const nk=f.st==='atk'&&f.mv==='su';
+    poly([-14,-36,14,-36,15,0,-14,0],'#9aa3a8',1.5);g.fillStyle='#6f787d';[[-8,-30],[5,-24],[-3,-14],[8,-8]].forEach(([x,y])=>{g.beginPath();g.ellipse(x,y,3,2,0.4,0,7);g.fill()}); // grey goliath skin with darker stone patches
+    if(!nk){poly([-14,-36,-4,-36,-3,0,-14,0],'#6a4a2a',1.2);poly([4,-36,14,-36,15,0,3,0],'#6a4a2a',1.2);poly([-15,-5,15,-5,15,0,-15,0],'#3a2a1a',1.2);g.fillStyle='#c9a227';g.fillRect(-2,-5,4,5)}}, // open leather vest, belt
+  head(o,f,t){const r=13;circ(0,-r,r,'#9aa3a8');g.fillStyle='#6f787d';g.beginPath();g.ellipse(-4,-2*r+5,4,2.5,0,0,7);g.fill();
+    g.fillStyle='#4a5258';g.fillRect(1,-r-6,12,3); // heavy brow
+    const nk=f.st==='atk'&&f.mv==='su';g.fillStyle='#111';g.fillRect(6,-r-3,3,3);
+    if(nk){g.fillStyle='#ff6ad5';g.fillRect(6,-r-3,3,3);g.strokeStyle='#5a3a3a';g.lineWidth=1.5;g.beginPath();g.arc(7,-4,4,0.2,2.8);g.stroke()} // pupils blown, big grin
+    else{g.strokeStyle='#4a3a3a';g.lineWidth=1.4;g.beginPath();g.moveTo(5,-5);g.lineTo(11,-5);g.stroke()}},
+  weapon(o,f,t){if(f.st==='atk'&&f.mv==='su'||(S&&!vegaHas(S,f)))return; // glaive (not while it's thrown, or while he's busy helicoptering)
+    vegaGlaive()},
+  front(o,f,t){if(!(f.st==='atk'&&f.mv==='su'))return; // The Helicopter: a censor bar and a whirring blur. That's all you get.
+    const sp=f.mf*0.9;g.save();g.translate(14,-3);if(!PX){g.globalAlpha=0.5;g.strokeStyle='#fff';g.lineWidth=2;for(let k=0;k<3;k++){g.beginPath();g.ellipse(6,0,20,6,0,sp+k*2.1,sp+k*2.1+1.3);g.stroke()}g.globalAlpha=1}
+    g.rotate(-0.1);g.fillStyle='#000';g.fillRect(-12,-6,26,11);g.fillStyle='#fff';g.font='bold 6px sans-serif';g.textAlign='center';g.fillText('CENSORED',1,2);g.restore()}},
 soren:{th:18,sh:18,T:31,neck:3,hr:12,ua:15,fa:15,aw:8,lw:10,foot:9,shX:2,shY:5,pants:'#d8dce6',pantsB:'#b8bdca',boot:'#5a6478',
   sleeve:'#eef1f6',sleeveB:'#cfd5e0',grip:-0.6,
   behind(o,f,t,hipY){const big=f.dragon>0,flap=Math.sin(t*(big?0.25:0.08))*(big?8:3),sp=big?1.7:1; // silver dragon wings
@@ -2540,7 +2739,8 @@ function drawFighter(f,tagCol,tag){
   if(f.reckless>0&&f.st!=='ko'&&fxOn('dask')){const d=DFC*0.63;fxCell(fxOn('dask'),(Math.floor(f.t/5)%5)*DFC,0,DFC,DFC,-d/2,-c.h*0.55-d/2,d,d)}
   const heat=S&&S.zones&&S.f.some(o=>o!==f&&CH[o.c].id==='owen'&&inSmoke(S,f,o.i)); // inside an enemy Owen's smoke (any number of fighters)
   if(heat&&'filter' in g)g.filter='grayscale(1) brightness(1.15) sepia(1) saturate(9) hue-rotate(-28deg) contrast(1.25)';
-  drawBody(f,'f'+f.i);g.filter='none';
+  const kw=f.watch>0&&f.st!=='ko';if(kw){g.save();g.globalAlpha*=0.12;g.shadowBlur=0}if(!(f.st==='atk'&&f.md&&f.md.ride))drawBody(f,'f'+f.i);g.filter='none';if(f.specter>0&&f.st!=='ko'){const q=f.t*0.09,sx=Math.cos(q)*38,sy=-c.h*0.6+Math.sin(q)*12;g.save();g.globalAlpha=Math.sin(q)>0?0.75:0.4;g.fillStyle='#d8d0f0';g.beginPath();g.arc(sx,sy-8,9,Math.PI,0);g.lineTo(sx+9,sy+12);for(let w=0;w<4;w++)g.lineTo(sx+9-w*6-3,sy+12-(w%2?0:5));g.lineTo(sx-9,sy+12);g.closePath();g.fill();g.fillStyle='#2a1a3a';g.fillRect(sx-5,sy-10,3,4);g.fillRect(sx+2,sy-10,3,4);g.restore()} // Squirm's specter circling him
+  if(kw){g.restore();const ey=-c.h+16+(f.st==='atk'?2:0);g.save();g.shadowColor='#fff';g.shadowBlur=14;g.fillStyle='#fff';g.fillRect(2,ey,5,3);g.fillRect(10,ey,5,3);g.restore()} // I'm Watching You: only the eyes show
   if(c.id==='tenebrund'&&f.st!=='ko'&&sheetFor(f)&&fxOn('ten')){const d=TFC*0.55;fxCell(fxOn('ten'),(Math.floor(f.t/7)%4)*TFC,5*TFC,TFC,TFC,-d/2+4,-c.h-8-d/2,d,d)}
   g.shadowBlur=0;
   if(f.guided>0&&f.st!=='ko'&&fxOn('sfx')){const d=56;g.save();g.scale(f.face,1);fxCell(fxOn('sfx'),(Math.floor(f.t/6)%6)*256,4*256,256,256,-d/2,-c.h-2-d/2,d,d);g.restore()} // Guiding Bolt's mark
@@ -2568,7 +2768,7 @@ function drawFighter(f,tagCol,tag){
       g.globalAlpha=1;g.lineWidth=2;g.beginPath();g.arc(f.md.ax,f.md.ay,lock?10:14,0,7);g.moveTo(f.md.ax-20,f.md.ay);g.lineTo(f.md.ax+20,f.md.ay);g.moveTo(f.md.ax,f.md.ay-20);g.lineTo(f.md.ax,f.md.ay+20);g.stroke();g.restore()}}
   if(f.reckless>0&&f.st!=='ko'&&!(f.muddle>0)){g.font='16px Bangers,Impact,sans-serif';g.fillStyle='#ff6a5a';g.strokeStyle='#000';g.lineWidth=4;g.strokeText('RECKLESS',f.x,f.y-c.h-52);g.fillText('RECKLESS',f.x,f.y-c.h-52)}
   drawHRFx(f,c);
-  {const tags=[];if(f.brk>0)tags.push(['ON BREAK','#f2b134']);if(f.steady>0)tags.push(['STANDING FIRM','#f2b134']);if(f.dragon>0)tags.push(['SILVER DRAGON','#dfe9ff']);if(f.guided>0)tags.push(['GUIDED','#fff2a8']);if(f.decree>0)tags.push(['DECREE x'+f.decree,'#ffd34d']);if(f.jet>0)tags.push(['JET','#7fd0ff']);if(f.psycho>0)tags.push(['PSYCHO','#ff5a3a']);if(f.medx>0)tags.push(['MED-X','#ff9ab0']);if(f.berserk>0)tags.push(['BERSERK','#ff5a3a']);if(f.pax>0)tags.push(['PAX','#ffd0e8']);if(f.poison>0)tags.push(['POISONED','#9bd35a']);if(f.burn>0)tags.push(['BURNING','#ff8a1a']);
+  {const tags=[];if(f.brk>0)tags.push(['ON BREAK','#f2b134']);if(f.steady>0)tags.push(['STANDING FIRM','#f2b134']);if(f.dragon>0)tags.push(['SILVER DRAGON','#dfe9ff']);if(f.guided>0)tags.push(['GUIDED','#fff2a8']);if(f.watched>0&&f.watchT>0)tags.push(['WATCHED x'+f.watched,'#e8e4ff']);if(S&&f.st!=='ko'&&f.watch<=0&&kuckVeng(S,f))tags.push(['VENGEANCE','#ff8a5a']);if(f.decree>0)tags.push(['DECREE x'+f.decree,'#ffd34d']);if(f.jet>0)tags.push(['JET','#7fd0ff']);if(f.psycho>0)tags.push(['PSYCHO','#ff5a3a']);if(f.medx>0)tags.push(['MED-X','#ff9ab0']);if(f.berserk>0)tags.push(['BERSERK','#ff5a3a']);if(f.pax>0)tags.push(['PAX','#ffd0e8']);if(f.poison>0)tags.push(['POISONED','#9bd35a']);if(f.burn>0)tags.push(['BURNING','#ff8a1a']);
     let ty=f.y-c.h-(f.reckless>0||f.muddle>0?70:52);
     if(f.chemEnd>S.frame&&f.st!=='ko'&&fxOn('cchem')){const d=40,iy=ty-6;fxCell(fxOn('cchem'),(Math.floor(S.frame/6)%6)*160,f.chemQ*160,160,160,f.x-d/2,iy-d/2-8,d,d);ty-=34}g.font='16px Bangers,Impact,sans-serif';g.textAlign='center';g.lineWidth=4;g.strokeStyle='#000';
     for(const[tx,col]of tags){if(f.st==='ko')break;g.fillStyle=col;g.strokeText(tx,f.x,ty);g.fillText(tx,f.x,ty);ty-=17}
@@ -2622,6 +2822,10 @@ function drawProj(p){
   else if(p.kind==='sign'){g.rotate(p.t*0.28*Math.sign(p.vx||1));seg(0,4,0,22,3,'#8a6a42');poly([-17,-14,17,-14,17,6,-17,6],'#f6f2ea',1.5);g.fillStyle='#c0392b';g.font='bold 7px sans-serif';g.textAlign='center';g.fillText('ON',0,-6);g.fillText('STRIKE',0,2)}
   else if(p.kind==='shiplaser'){g.scale(Math.sign(p.vx)||1,1);const gr=g.createLinearGradient(-p.w,0,p.w/2,0);gr.addColorStop(0,'#ff3a3a00');gr.addColorStop(0.7,'#ff3a3a');gr.addColorStop(1,'#fff0f0');g.fillStyle=gr;g.fillRect(-p.w,-p.h/2,p.w*1.5,p.h);g.fillStyle='#ffffffcc';g.fillRect(-p.w*0.3,-3,p.w*0.8,6)}
   else if(p.kind==='demon'){g.scale(p.w/34,p.w/34);const bob=Math.sin(p.t*0.4)*4;g.fillStyle=p.bad?'#ff2a2a':'#c4302b';g.beginPath();g.arc(0,bob,16,0,7);g.fill();g.beginPath();g.moveTo(-12,bob-10);g.lineTo(-8,bob-26);g.lineTo(-3,bob-12);g.moveTo(12,bob-10);g.lineTo(8,bob-26);g.lineTo(3,bob-12);g.fill();g.fillStyle='#ffd34d';g.fillRect(-7,bob-4,4,4);g.fillRect(4,bob-4,4,4);g.strokeStyle='#c4302b';g.lineWidth=3;g.beginPath();g.moveTo(-Math.sign(p.vx)*14,bob+6);g.quadraticCurveTo(-Math.sign(p.vx)*30,bob+20,-Math.sign(p.vx)*26,bob-6);g.stroke()}
+  else if(p.kind==='eblast'){const gr=g.createLinearGradient(-20*Math.sign(p.vx||1),0,10*Math.sign(p.vx||1),0);gr.addColorStop(0,'#5a2a9a00');gr.addColorStop(1,'#b48cff');g.fillStyle=gr;g.fillRect(-20,-5,40,10);g.fillStyle='#f0e8ff';g.beginPath();g.arc(6*Math.sign(p.vx||1),0,5,0,7);g.fill()}
+  else if(p.kind==='glaive'){g.scale(Math.sign(p.vx)||1,1);g.rotate(Math.PI/2);g.translate(0,20);vegaGlaive()} // flying blade-first
+  else if(p.kind==='david'){const fl=p.vx<0;g.rotate(p.t*0.28*(fl?-1:1));kuckDoll(0,20,44,0,fl)} // stuffed David, tumbling
+  else if(p.kind==='imp'){g.scale(Math.sign(p.vx)||1,1);g.translate(0,p.h/2);kuckImp(p.t,p.vy===0?1:0.2)}
   else if(p.kind==='arrow'){ // Dino's arrows: plain, fire, whistle, rope
     const own=S.f[p.o];
     if(p.rope&&own){g.restore();g.strokeStyle='#c8a06a';g.lineWidth=1.6;g.beginPath();g.moveTo(own.x+own.face*20,own.y-70);g.quadraticCurveTo((own.x+p.x)/2,(own.y-70+p.y)/2+18,p.x,p.y);g.stroke();g.save();g.translate(p.x,p.y)}
@@ -2643,6 +2847,11 @@ function drawTrickIcon(kind,x,y,r,alpha){ // Dino's next trick arrow: over his h
   else{g.strokeStyle='#c8a06a';g.lineWidth=2;g.beginPath();g.arc(-1,2,6,0,6.2);g.stroke();g.beginPath();g.arc(-1,2,3,0,6.2);g.stroke();seg(4,-2,8,-8,2,'#c8a06a');poly([6,-10,10,-10,9,-6],'#b8bcc6',0.5)}
   g.restore()}
 function drawZone(z){
+  if(z.k==='npeggy'){const P2=NET.peggy,gy=floorY(Math.max(WALL_L,Math.min(WALL_R,z.x))),y=gy<H-5?gy:FLOOR,A=MACHINES.types[2].art,im=fxOn(A.fx);g.save();g.translate(z.x,y);
+    if(im){g.scale(-z.dir,1);g.drawImage(im,(Math.floor(z.t/3)%A.n)*A.fw,0,A.fw,A.fh,-P2.w/2-A.gx0*A.k/2,-A.gy*A.k/2,A.fw/2,A.fh/2)}
+    else{g.scale(z.dir,1);poly([-P2.w/2,-20,-P2.w/2+20,-P2.h,P2.w/2-30,-P2.h,P2.w/2,-40,P2.w/2,-20],'#3a1c16',2);g.fillStyle='#ff8a3d';g.fillRect(P2.w/2-40,-P2.h+14,22,14);[-60,0,60].forEach(cx=>circ(cx,-20,20,'#2a2a2a',2))}
+    g.restore();return}
+  if(z.k==='kdavid'){const a=z.life<30?z.life/30:1;g.save();g.globalAlpha=a;if(z.ground){g.fillStyle='#0005';g.beginPath();g.ellipse(z.x,z.y,20,4,0,0,7);g.fill()}kuckDoll(z.x,z.y,KUCK.statue.h,z.ground?0:z.t*0.3,z.face<0);g.restore();return} // statue David standing where he landed, facing the way he was thrown
   if(z.k==='demon'&&fxOn('demon')){const[r,c]=demonFrame(z),U=1.5;g.save();g.translate(z.x,z.y);g.scale(z.face,1);fxCell(fxOn('demon'),c*192,r*192,192,192,-96/U,-170/U,192/U,192/U);g.restore();return}
   if(z.k==='pattern'&&fxOn('static')){const im=fxOn('static'),d=STC*STS;let r,c;
     if(z.delay>0){r=0;c=Math.min(6,Math.floor((22-z.delay)/22*7))}else{r=1;c=Math.min(8,Math.floor((40-z.life)/40*9))}
@@ -2781,6 +2990,10 @@ function drawFx(e){
       g.restore();return}}
   if(e.k==='text'){g.globalAlpha=k<0.75?1:1-(k-0.75)*4;g.font=e.size+'px Bangers,Impact,sans-serif';g.textAlign='center';g.lineWidth=5;g.strokeStyle='#000';const y=e.y-e.t*0.6,hw=g.measureText(e.txt).width/2+12,x=Math.max(hw,Math.min(W-hw,e.x));g.strokeText(e.txt,x,y);g.fillStyle=e.col;g.fillText(e.txt,x,y);g.globalAlpha=1}
   else if(e.k==='spark'){g.strokeStyle=e.col;g.lineWidth=e.big?4:3;const r=(e.big?34:20)*(0.4+k);for(let i=0;i<8;i++){const a=i*0.785+e.x;g.beginPath();g.moveTo(e.x+Math.cos(a)*r*0.4,e.y+Math.sin(a)*r*0.4);g.lineTo(e.x+Math.cos(a)*r,e.y+Math.sin(a)*r);g.stroke()}}
+  else if(e.k==='vclothes'){g.save();const t=e.t;[[-3.5,-7,'#6a4a2a',0.25],[2.5,-8.5,'#3a3028',-0.3],[4.5,-6,'#2a1e14',0.4]].forEach(([vx,vy,col,sp],i)=>{const x=e.x+vx*e.dir*t,y=e.y+vy*t+0.3*t*t;g.save();g.translate(x,y);g.rotate(t*sp);g.globalAlpha=1-k;g.fillStyle=col;g.fillRect(-10,-7,20,14);g.restore()});g.restore()}
+  else if(e.k==='sqboom'){g.save();g.globalAlpha=1-k;g.strokeStyle='#cfe6ff';g.lineWidth=5*(1-k)+1;g.beginPath();g.arc(e.x,e.y,e.r*(0.2+0.8*k),0,7);g.stroke();g.strokeStyle='#9fd0ff';for(let i=0;i<6;i++){const a=i*1.05+e.t*0.2;g.beginPath();g.moveTo(e.x,e.y);g.lineTo(e.x+Math.cos(a)*e.r*k,e.y+Math.sin(a)*e.r*k*0.7);g.stroke()}g.restore()}
+  else if(e.k==='kpulse'){g.save();g.globalAlpha=(1-k)*0.8;g.strokeStyle='#d8ccff';g.lineWidth=4;g.beginPath();g.ellipse(e.x,e.y,e.r*(0.3+0.7*k),e.r*(0.3+0.7*k)*0.55,0,0,7);g.stroke();g.globalAlpha=(1-k)*0.18;g.fillStyle='#b8a8ff';g.fill();g.restore()}
+  else if(e.k==='kimpboom'){g.save();g.globalAlpha=1-k;const r=10+30*k;const gr=g.createRadialGradient(e.x,e.y,1,e.x,e.y,r);gr.addColorStop(0,'#fff2a0');gr.addColorStop(0.4,'#ff8a2a');gr.addColorStop(1,'#c4302b00');g.fillStyle=gr;g.beginPath();g.arc(e.x,e.y,r,0,7);g.fill();g.restore()}
   else if(e.k==='dshot'){g.save();g.globalAlpha=1-k;g.lineCap='round';g.strokeStyle='#ff5a5a';g.lineWidth=14*(1-k)+2;g.beginPath();g.moveTo(e.x,e.y);g.lineTo(e.x2,e.y2);g.stroke();g.strokeStyle='#fff6e0';g.lineWidth=4*(1-k)+1;g.stroke();g.restore()} // Called Shot's arrow trail
   else if(e.k==='ring'){g.strokeStyle=e.col;g.globalAlpha=1-k;g.lineWidth=e.small?2:5;g.beginPath();g.ellipse(e.x,e.y,(e.small?30:180)*k+10,(e.small?8:40)*k+4,0,0,7);g.stroke();g.globalAlpha=1}
   else if(e.k==='dust'){g.fillStyle='#ffffff40';for(let i=-2;i<=2;i++){g.beginPath();g.arc(e.x+i*14*(1+k),e.y-6*k,8*(1-k)+2,0,7);g.fill()}}
@@ -3503,7 +3716,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){if(NET.host)hostNextMatch(false);e
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.16'; // shown on the title screen; online players must match
+const VERSION='0.2.17'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 /* ---- nickname: asked once per device before the main menu, shown to the other players online (display only, never in the sim) ---- */

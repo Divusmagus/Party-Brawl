@@ -1,0 +1,58 @@
+PARTY BRAWL - PATCH NOTES v0.2.17
+Released 2026-11-24
+
+Four new fighters! All four are in vector art for now; sprites, portraits and theme songs are on
+the way. None of them have had a proper balance pass yet, so expect numbers to change after you
+play them.
+
+NEW FIGHTER: KUCK HOLD (Waterdeep: Dragon Heist)
+- The Zhentarim boss with a fiend patron, half the gold, and the stuffed body of David, the gnome
+  who robbed him. A tricky mid-range fighter with 1020 health.
+- STUFFED DAVID (Special 1): hurls stuffed David at them (62, lobbed). David stands where he lands
+  as a statue that blocks enemies (hop over him) and their shots. Walk over him to pick him up and
+  reset the cooldown; otherwise he's gone when the 6s cooldown runs out.
+- PUNT THE IMP (Special 2): drop-kicks his imp (badly disguised as David) along the ground. It runs
+  straight ahead, hops down off ledges, and bursts into hellfire (64 Fire) on the first enemy it
+  reaches. 3s cooldown.
+- I'M WATCHING YOU (Super): Kuck fades from sight for 6s; only his glowing white eyes show, and he
+  moves 30% faster. Every second a psychic pulse hurts everyone near him and gives them a stack of
+  WATCHED. Each stack makes Kuck's hits on them do 5% more damage, up to 6 stacks (+30%); the
+  stacks last 6s.
+- VENGEANCE (passive): while David's face is out there watching (statue David on the field, or the
+  imp in its David disguise running around), Kuck takes 20% less damage and 30% less knockback.
+  The David in Da Fuck Den doesn't count: he's part of the stage.
+
+NEW FIGHTER: VEGAGATH HARDHEART (Waterdeep: Dragon Heist)
+- A big, simple-minded goliath fighter with a glaive. A Heavy with 1200 health.
+- GLAIVE THROW (Special 1): hurls his glaive straight ahead (70). It spears the first enemy it hits:
+  a long stun as they're pinned and pushed back, never a wall splat. 5s cooldown.
+- SECOND WIND (Special 2): dashes forward and catches his breath on the way, healing 8% of his max
+  health. 10s cooldown.
+- THE HELICOPTER (Super): high on whatever Alaric gave him, he strips off and charges in,
+  helicoptering like a saw blade: eight quick hits and a big finish that launches. Armored while
+  he whirs. Censored, obviously.
+- ACTION SURGE (passive): a light attack has a 30% chance, and a heavy a 15% chance, to instantly
+  go again with no input.
+
+NEW FIGHTER: SQUIRM (Princes of the Apocalypse)
+- A hexblade who never draws his blade, just Eldritch Blast, and argues out loud with Daevic, a
+  voice nobody else can hear. A zoner with 980 health.
+- ELDRITCH BLAST (Special 1): two quick bolts of force in a straight line, each pushing them back a
+  little. 1.5s cooldown.
+- SPECTER (Special 2): a specter circles him for 5s. Anyone who hits him in melee takes Dark damage,
+  and it gives him a small grey shield (6% of his max health). 7s cooldown.
+- THUNDER STEP (Super): a thunderclap blasts everyone near him (180, unblockable, big knockback),
+  and he teleports to the safest spot: the place on the ground or a fixed platform furthest from
+  every enemy. Moving platforms (like the Da Fuck Den chandelier) don't count.
+- TWO MINDS (passive): Daevic watches his back. Once every 10s, a hit from behind is blocked for him.
+
+NEW FIGHTER: NETTOR HALLOS (Descent into Avernus)
+- A Way of the Drunken Master monk and the party's usual Fat Peggy driver. A fast rushdown fighter
+  with 900 health.
+- FLURRY OF BLOWS (Special 1): a four-hit flurry, then he stumbles back out of reach. 3s cooldown.
+- STUMBLE (Special 2): an erratic, lurching dash straight through people (untouchable for most of
+  it); once he's through, he spins round and kicks. 4s cooldown.
+- FAT PEGGY! (Super): he jumps in the party's infernal war machine and drives it across the whole
+  stage, running over everyone on the ground (200, unblockable). Jump it.
+- DEFLECT MISSILES (passive): a 30% chance to swat an incoming projectile back at whoever threw it,
+  at 60% damage. Supers don't count.
