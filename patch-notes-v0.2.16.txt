@@ -1,0 +1,58 @@
+PARTY BRAWL - PATCH NOTES v0.2.16
+Released 2026-11-24
+
+NEW FIGHTER: DINO (Dragonlance)
+- A stealthy sniper ranger who shoots from very far away and carries trick arrows. A light, quick
+  zoner with 1050 health. Vector art for now.
+- LONG SHOT (Special 1): tap for a quick arrow, or hold to draw the bow back (up to half a second)
+  for a harder, faster arrow that crosses the whole stage. 0.75s cooldown.
+- TRICK ARROW (Special 2): fires the next trick arrow in his quiver, always in this order:
+  - FIRE: lobbed; leaves flames burning on the ground for 3s.
+  - WHISTLE: a shrieking arrow that makes them flinch even through a block.
+  - ROPE: shot up at an angle; where it sticks in a platform or wall, he zips over to it.
+  An icon over his head, and in his Special 2 slot, shows which one is next.
+- CALLED SHOT (Super): a red laser sight follows the enemy for about 1.5s, then locks and fires one
+  huge arrow (240) that can't be blocked and flies through everything along the line. When it says
+  LOCKED, jump or drop out of the line.
+- EAGLE EYE (passive): his arrows hit harder the farther they fly, up to 25% more across the stage.
+- Dino has his own theme song, "Hero's Fight".
+
+ONLINE: WATCHERS AND TAKING TURNS
+- An online room now holds up to 8 people. Anyone who joins once the player slots are full watches
+  the fight live (same match, names and HUD, just no controls), even if they join mid-match.
+- New room setting, ROTATION: who sits out after each match when people are watching. Off, Loser
+  sits out (default), Winner sits out, or Winner + loser. The loser is whoever finished last (2v2:
+  the losing team). People watching come in in the order they've been waiting, and take any CPU
+  slot first.
+- The victory screen shows a NEXT MATCH panel with who plays and who watches. The host can tap a
+  player, then someone watching, to swap them (including themselves: the host can sit out and keep
+  hosting while they watch).
+- Rematch / Next match: players who stay keep their fighters, only newcomers pick.
+  Character select: the rotation still happens, but everyone picks again.
+
+NEW ART
+- Every fighter now has new Autosprite art. All-new sprite sheets this time for Frica, Madog (plus
+  a new portrait), Dask, Calder Grimm, Owen Hale and Heavy Rail.
+- Madog's effects are new too: a ring of golden skull spirits for Spirit Guardians, a dust trail
+  behind his charges, and the OH YEAH! brick wall now stands in front of him while he bellows, then
+  bursts apart when he charges into it.
+- Stand-ins for now: Frica's heavy reuses other frames; Dask Action uses his flinch frame; Owen and
+  Heavy Rail hold a still stance when idle.
+
+HITBOXES (fitted to the new art)
+- Frica: light, heavy and Hex Blade hit at waist height (were chest height); Hex Blade reach
+  64 -> 72. Air heavy covers head to feet.
+- Madog: light reaches further, 70 -> 88, at chest height. Heavy covers above his head down to his
+  waist.
+- Dask: light at waist height. Heavy covers the whole overhead chop down to the floor. Air heavy in
+  front of his waist. Reckless Rage covers head to feet.
+- Calder Grimm: light covers chest to waist; heavy chest to floor; air heavy a little higher and
+  further forward.
+- Owen Hale: heavy moved down to waist height.
+- Heavy Rail: light at waist height; heavy reaches lower (chest to waist).
+- Reach is otherwise unchanged. Light, heavy and air heavy show their impact frames while the
+  hitbox is live.
+
+MUSIC
+- Lives mode: when one fighter has more lives left than everyone else, their theme song plays,
+  until they're out of lives or someone else takes the lead. A tie goes back to the stage music.
