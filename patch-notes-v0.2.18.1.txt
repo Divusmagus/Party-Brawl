@@ -1,0 +1,9 @@
+PARTY BRAWL v0.2.18.1 (minor patch)
+
+NEW ART
+- SQUIRM: new character-select portrait (the hooded hexblade in his tattered cloak, yellow-green
+  eldritch fire in his hand).
+- NETTOR HALLOS: new character-select portrait (the grinning halfling monk, arms crossed, in his
+  green hooded tunic and blue sash).
+
+Both still fight with their vector art until their sprite sheets are made.

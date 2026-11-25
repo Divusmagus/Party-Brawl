@@ -3533,7 +3533,7 @@ function cardHTML(c,i,withMoves){
   return `<button class="card" type="button" data-ci="${i}"><canvas data-por="${i}"></canvas><div><b>${c.name}</b><div class="meta">${c.camp}</div><span class="role">${c.role}</span>${statBars(c)}
   ${withMoves?`<div class="moves">${c.passive?`<span>Passive ${c.passive.n}</span>: ${c.passive.d}<br>`:''}<span>S1 ${m.s1.n}</span> (${(c.types&&c.types.s1)||'Physical'}): ${m.s1.d}<br><span>S2 ${m.s2.n}</span> (${(c.types&&c.types.s2)||'Physical'}): ${m.s2.d}<br><span>Super ${m.su.n}</span> (${(c.types&&c.types.su)||'Physical'}): ${m.su.d}</div>`:`<div class="moves">${c.blurb}</div>`}</div></button>`;
 }
-const PORTRAIT_ART=Object.fromEntries(['frica','madog','feng','tenebrund','salty','dask','calder','heavyrail','owen','tedd','bof','chief','soren','kuck','dino','vega'].map(id=>[id,'portraits/'+id+'.png'])); // optional painted portraits: id -> 'portraits/<id>.png' (falls back to the fighter's sprite)
+const PORTRAIT_ART=Object.fromEntries(['frica','madog','feng','tenebrund','salty','dask','calder','heavyrail','owen','tedd','bof','chief','soren','kuck','dino','vega','squirm','nettor'].map(id=>[id,'portraits/'+id+'.png'])); // optional painted portraits: id -> 'portraits/<id>.png' (falls back to the fighter's sprite)
 function porHTML(i,cls){const src=PORTRAIT_ART[CH[i].id];return src?`<img src="${src}" alt="" class="${cls||''}" onerror="this.replaceWith(Object.assign(document.createElement('canvas'),{className:'${cls||''}'}));refreshPortraits()">`:`<canvas data-por="${i}" class="${cls||''}"></canvas>`}
 $('cards').innerHTML=CH.map((c,i)=>`<button class="tile" type="button" data-ci="${i}" aria-label="${c.name}" title="${c.name}">${porHTML(i)}</button>`).join('');
 $('moveCards').innerHTML=CH.map((c,i)=>cardHTML(c,i,true).replace('<button class="card" type="button"','<div class="card"').replace(/<\/button>$/,'</div>')).join('');
@@ -3728,7 +3728,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){if(NET.host)hostNextMatch(false);e
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.18'; // shown on the title screen; online players must match
+const VERSION='0.2.18.1'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 /* ---- nickname: asked once per device before the main menu, shown to the other players online (display only, never in the sim) ---- */
