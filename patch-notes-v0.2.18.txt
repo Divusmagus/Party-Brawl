@@ -1,0 +1,46 @@
+PARTY BRAWL - PATCH NOTES v0.2.18
+Released 2026-11-24
+
+NEW ART
+- KUCK HOLD: first real sprites, replacing his vector art: the hooded warlock in the long black
+  gold-embroidered coat, glowing red eyes in the hood, dark green magic in his hands. A green flare
+  from his palm (light), a big green burst from both palms (heavy), a green swipe and a huge
+  forward blast in the air, pulling stuffed David from his coat and hurling him, a drop kick for
+  Punt the Imp, and new walk, run, hit, block, stunned and knocked-down frames. New portrait.
+  - Stuffed David no longer rides on his back; David only appears when Kuck throws him.
+- KUCK'S IMP: now a tiny red devil in a David disguise (pointed red hat, fake white beard, green
+  tunic, horns and tail showing). When it pops it swells up, bursts into a full hellfire explosion
+  and smoke, and leaves its hat behind.
+- DINO: first real sprites: the blond ranger in his ragged brown hooded coat with a wooden
+  longbow. A bow jab, a big overhead bow swing, a kick and a downward bow swing in the air, nocking
+  and drawing for Long Shot, an angled-up shot for Trick Arrow, dropping to one knee for Called
+  Shot, and new walk, run, hit, block, stunned and knocked-down frames. New portrait.
+- VEGAGATH HARDHEART: first real sprites: the grey-skinned goliath in a rusty breastplate with a
+  long glaive. A lunging glaive thrust, an overhead chop into the ground, a flying thrust and a
+  downward swing in the air, a javelin-style Glaive Throw, a charge and a deep breath for Second
+  Wind, and new walk, run, hit, block, stunned and knocked-down frames. New portrait.
+  - The Helicopter: he drops his armor and glaive and walks in, with a censor bar spinning like a
+    fan blade. It's a plain black bar for now; custom censor bar art is coming.
+
+MUSIC
+- Theme songs for Kuck Hold ("A Cuck's Gold") and Tenebrund Stoneshaft ("Tenebrund's Got an
+  Appetite") are on the way: they're in the test build but didn't make it into this update. Until
+  then those two fighters get the stage music.
+
+BUG FIXES
+- DINO: fixed getting stuck hanging in the air after a Rope arrow. If something blocks the zip
+  (like the scaffold on Vogler), he now lets go of the rope after a moment and drops, and a zip
+  can never last more than 1.5s.
+
+BALANCE / HITBOXES
+- DINO: the Whistle arrow now also slows them for 2s. The Fire arrow flies much flatter and faster
+  (it used to sail over short fighters): it now hits short, medium and tall fighters from point
+  blank to about 500 away.
+- KUCK HOLD:
+  - Stuffed David is much bigger as a statue (about the height of most fighters' chests, was knee
+    high), so he actually blocks shots and is harder to hop over.
+  - The David throw is much flatter and faster (was a high lob that only hit up close): it now hits
+    from point blank to about 400 away.
+  - I'm Watching You: he now also takes 30% less damage while it's active, so he can get in close.
+- Hitboxes moved to match the new art for Dino, Kuck Hold and Vegagath Hardheart (reach unchanged).
+  Their attacks now show their impact frames while the hitbox is live.

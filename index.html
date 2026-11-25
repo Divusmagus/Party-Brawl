@@ -366,7 +366,7 @@ const MUSIC={ // song files by slot; null = no song yet, so the code-made chiptu
     ship:'music/stage_traveller.mp3', // Starfire Extermination (Beyond the Nest / Traveller)
     tahoe:'music/stage_fallout.mp3', // Neon Under Nuclear Skies (Fallout)
     avernus:'music/stage_avernus.mp3'}, // Fat Peggy (Descent into Avernus)
-  themes:{frica:'music/theme_frica.mp3',madog:'music/theme_madog.mp3',soren:'music/theme_soren.mp3' /* Silver Flames */,feng:'music/theme_feng.mp3' /* Wicos Wills It */,salty:'music/theme_salty.mp3' /* Squeezebox Pirate */,dino:'music/theme_dino.mp3' /* Hero's Fight */}}; // character themes
+  themes:{frica:'music/theme_frica.mp3',madog:'music/theme_madog.mp3',soren:'music/theme_soren.mp3' /* Silver Flames */,feng:'music/theme_feng.mp3' /* Wicos Wills It */,salty:'music/theme_salty.mp3' /* Squeezebox Pirate */,dino:'music/theme_dino.mp3' /* Hero's Fight */}} /* kuck + tenebrund themes left out of v0.2.18 on GitHub: the mp3s were too big to copy from the test build; add them back with the files */; // character themes
 const hasTheme=ci=>!!MUSIC.themes[CH[ci].id];
 const CRAFT_MIN=600,CRAFT_VAR=421,JET_T=360,MEDX_T=360,JET_SPD=1.25,MEDX_TAKE=0.75,STIM_HEAL=0.07,PSYCHO_T=360,PSYCHO_MUL=1.25; // Calder's Field Chemist: 10-17s between crafts, 6s effects
 const CHEM_SHOW=[240,50,300,60,300]; // how long each chem's icon floats over them (frames)
@@ -393,13 +393,13 @@ function chem(s,a,d,any){ // pick a chem: a ready one (or any one, for Overdose)
   CHEMS[q].fx(s,a,d);d.chemQ=q;d.chemEnd=s.frame+CHEM_SHOW[q];say(s,d.x,d.y-120,CHEMS[q].n,CHEMS[q].col,26)}
 /* ---------- the roster: one entry per fighter ---------- */
 const DINO={chMax:30,tap:{vx:18,dmg:50,kb:[4,-1]},full:{vx:24,dmg:105,kb:[9,-3]}, // Dino: Long Shot from a tap (quick arrow) to a full draw (30 frames)
-  fire:{dmg:40,w:110,h:46,life:180,every:15,tick:12},whistle:{dmg:30,hs:34},rope:{vx:12,vy:-9,dmg:16,spd:20}, // trick arrows: fire patch 3s (12 Fire every 1/4s), whistle flinch through block, rope zip speed
+  fire:{dmg:40,w:110,h:46,life:180,every:15,tick:12},whistle:{dmg:30,hs:34,slow:120},rope:{vx:12,vy:-9,dmg:16,spd:20}, // trick arrows: fire patch 3s (12 Fire every 1/4s), whistle flinch through block, rope zip speed
   su:{lock:92,fire:104,dmg:240,track:7},eagle:0.25,eagleDist:800}; // Called Shot: laser tracks until frame 92 (7 px/frame), fires at 104; Eagle Eye: +25% at 800 px flown
 const DINO_TRICKS=['fire','whistle','rope'];
 function dinoFire(s,a,x,y){s.zones=s.zones.filter(z=>!(z.k==='dfire'&&z.o===a.i&&Math.abs(z.x-x)<60));s.zones.push({k:'dfire',o:a.i,x,y,w:DINO.fire.w,h:DINO.fire.h,life:DINO.fire.life,tk:0,hc:{}})} // a fire arrow's flames
-const KUCK={toss:{vx:8.5,vy:-7,g:0.42,dmg:62,kb:[7,-5],hs:22},cd:360,pickR:36,pickAfter:30,statue:{w:36,h:54}, // Kuck: stuffed David is lobbed and stands where he lands as a statue (blocks enemies and their shots) until Kuck picks him up (cooldown reset) or the 6s cooldown runs out
+const KUCK={toss:{vx:13,vy:-1.5,g:0.2,dmg:62,kb:[7,-5],hs:22},cd:360,pickR:40,pickAfter:30,statue:{w:48,h:84}, // Kuck: stuffed David is lobbed and stands where he lands as a statue (blocks enemies and their shots) until Kuck picks him up (cooldown reset) or the 6s cooldown runs out
   imp:{vx:7.5,dmg:64,kb:[8,-5],hs:20,life:130}, // Punt the Imp runs along the ground
-  watch:{t:360,every:60,r:190,dmg:35,max:6,per:0.05,last:360,spd:1.3}, // I'm Watching You: 6s see-through, a psychic pulse every 1s within 190 (35 dmg + a Watched stack); each stack +5% damage taken from Kuck, max 6, stacks last 6s
+  watch:{t:360,every:60,r:190,dmg:35,max:6,per:0.05,last:360,spd:1.3,take:0.7}, // I'm Watching You: 6s see-through, a psychic pulse every 1s within 190 (35 dmg + a Watched stack); each stack +5% damage taken from Kuck, max 6, stacks last 6s
   veng:{take:0.8,kb:0.7}}; // Vengeance: while statue David or the imp is out, 20% less damage and 30% less knockback
 function kuckVeng(s,k){return CH[k.c].id==='kuck'&&(s.zones.some(z=>z.o===k.i&&z.k==='kdavid'&&z.ground)||s.proj.some(p=>p.o===k.i&&p.kind==='imp'))} // David's face is out there watching
 function kuckHome(s,a){return!s.proj.some(p=>p.o===a.i&&p.kind==='david')&&!s.zones.some(z=>z.o===a.i&&z.k==='kdavid')} // is stuffed David with him (not thrown, not standing somewhere)?
@@ -649,12 +649,12 @@ const CH=[
       const k=(a.md.ch||0)/DINO.chMax,T=DINO.tap,F=DINO.full,L=(x,y)=>x+(y-x)*k;
       proj(s,a,{kind:'arrow',at:k>=1?'long':'n',eagle:1,x0:a.x+a.face*30,y:a.y-66,vx:a.face*L(T.vx,F.vx),w:26,h:8,life:90,dmg:L(T.dmg,F.dmg),kb:[L(T.kb[0],F.kb[0]),L(T.kb[1],F.kb[1])],hs:Math.round(L(16,24))});
       if(k>=1)say(s,a.x,a.y-120,'LONG SHOT!','#ffe08a',24)}}),
-  s2:mv({n:'Trick Arrow',d:'Fires the next trick arrow in his quiver, always in this order: Fire (lobbed; leaves flames burning on the ground for 3s), Whistle (a shrieking arrow that makes them flinch even through a block) and Rope (shot up at an angle; where it sticks in a platform or wall, he zips over to it). The icon over his head shows which one is next',su:10,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:90,
+  s2:mv({n:'Trick Arrow',d:'Fires the next trick arrow in his quiver, always in this order: Fire (a low lob; leaves flames burning on the ground for 3s), Whistle (a shrieking arrow that makes them flinch even through a block and slows them for 2s) and Rope (shot up at an angle; where it sticks in a platform or wall, he zips over to it). The icon over his head shows which one is next',su:10,ac:1,re:14,dmg:0,box:[0,0,0,0],cd:90,
     tick:(s,a,f,m)=>{
       if(f===10){const q=a.trick||0;a.trick=(q+1)%3;a.md.q=q;const x0=a.x+a.face*30;
-        if(q===0)proj(s,a,{kind:'arrow',at:'fire',eagle:1,x0,y:a.y-70,vx:a.face*10,vy:-5,g:0.32,w:24,h:10,life:120,dmg:DINO.fire.dmg,kb:[3,-2],hs:14,type:'Fire',
+        if(q===0)proj(s,a,{kind:'arrow',at:'fire',eagle:1,x0,y:a.y-70,vx:a.face*13,vy:-1,g:0.14,w:24,h:10,life:120,dmg:DINO.fire.dmg,kb:[3,-2],hs:14,type:'Fire',
           onHit:(s,a,d)=>dinoFire(s,a,d.x,d.y)});
-        else if(q===1){proj(s,a,{kind:'arrow',at:'whistle',eagle:1,x0,y:a.y-68,vx:a.face*15,w:24,h:10,life:70,dmg:DINO.whistle.dmg,kb:[2,0],hs:DINO.whistle.hs,unb:1,type:'Sonic'});say(s,a.x+a.face*40,a.y-110,'WHEEEE!','#e8f0ff',20)}
+        else if(q===1){proj(s,a,{kind:'arrow',at:'whistle',eagle:1,x0,y:a.y-68,vx:a.face*15,w:24,h:10,life:70,dmg:DINO.whistle.dmg,kb:[2,0],hs:DINO.whistle.hs,unb:1,type:'Sonic',onHit:(s,a,d)=>{d.slow=Math.max(d.slow||0,DINO.whistle.slow);say(s,d.x,d.y-CH[d.c].h-34,'SLOWED!','#e8f0ff',20)}});say(s,a.x+a.face*40,a.y-110,'WHEEEE!','#e8f0ff',20)}
         else proj(s,a,{kind:'arrow',at:'rope',rope:1,x0,y:a.y-74,vx:a.face*DINO.rope.vx,vy:DINO.rope.vy,w:20,h:10,life:60,dmg:DINO.rope.dmg,kb:[2,-1],hs:12});
         return}
       if(a.md.q!==2||f<11)return;
@@ -662,6 +662,8 @@ const CH=[
       if(!an){if(s.proj.some(p=>p.o===a.i&&p.rope)&&a.mf>=m.len-3)a.mf--;return} // wait for the rope arrow to stick (or fly off: then just recover)
       a.zipT=2;const c=CH[a.c],tx=an.plat?an.x:an.x-an.side*(c.w/2+2),ty=an.plat?an.y:Math.max(an.y+c.h*0.5,c.h+10),dx=tx-a.x,dy=ty-a.y,L=Math.hypot(dx,dy),sp=DINO.rope.spd;
       if(L<=sp){a.x=tx;a.y=ty;a.vx=0;a.vy=0;a.ground=false;a.md.anc=null;a.md.q=-1;a.mf=m.len-1;return}
+      a.md.zt=(a.md.zt||0)+1;if(a.md.zb===undefined||L<a.md.zb-0.5){a.md.zb=L;a.md.zs=0}else a.md.zs++; // stuck on something (a solid scaffold, a wall)? let go of the rope
+      if(a.md.zs>8||a.md.zt>90){a.md.anc=null;a.md.q=-1;a.mf=m.len-1;a.zipT=0;a.vx*=0.3;a.vy=Math.max(a.vy,0);return}
       a.vx=dx/L*sp;a.vy=dy/L*sp;a.ground=false;if(a.mf>=m.len-3)a.mf--}}), // zipping along the rope
   su:mv({n:'Called Shot',d:'Takes aim: a red laser follows the enemy for about 1.5s, then locks and fires one huge arrow that can\'t be blocked and flies through everything along the line. Get out of the laser\'s path before it fires',su:DINO.su.fire,ac:1,re:20,len:DINO.su.fire+21,dmg:0,box:[0,0,0,0],
     start:(s,a)=>{say(s,a.x,a.y-130,'CALLED SHOT!','#ff5a5a',36);const d=opp(s,a);a.md.ax=d?d.x:a.x+a.face*300;a.md.ay=d?d.y-CH[d.c].h*0.5:a.y-60},
@@ -686,7 +688,7 @@ const CH=[
       const T=KUCK.toss;proj(s,a,{kind:'david',x:a.x+a.face*24,y:a.y-70,vx:a.face*T.vx,vy:T.vy,g:T.g,w:30,h:40,life:150,dmg:T.dmg,kb:T.kb,hs:T.hs});say(s,a.x,a.y-120,'GET HIM, DAVID!','#e8d0a8',22)}}),
   s2:mv({n:'Punt the Imp',d:'Drop-kicks his imp (badly disguised as David) along the ground. It scurries straight ahead, hopping down off ledges, and bursts into hellfire on the first enemy it reaches',su:10,ac:1,re:16,dmg:0,box:[0,0,0,0],cd:180,
     tick:(s,a,f)=>{if(f===10){const I=KUCK.imp;proj(s,a,{kind:'imp',x:a.x+a.face*30,y:a.y-22,vx:a.face*I.vx,vy:-4,g:0.5,walker:1,w:30,h:36,life:I.life,dmg:I.dmg,kb:I.kb,hs:I.hs,type:'Fire'});say(s,a.x+a.face*40,a.y-110,'OOF!','#ff6a5a',20)}}}),
-  su:mv({n:"I'm Watching You",d:'Fades from sight for 6s: only his glowing eyes show, and he moves 30% faster. Every second a psychic pulse hurts everyone near him and marks them as WATCHED. Each stack makes Kuck\'s hits on them do 5% more damage (up to 6 stacks); stacks last 6s',su:14,ac:1,re:16,dmg:0,box:[0,0,0,0],inv:[0,14],
+  su:mv({n:"I'm Watching You",d:'Fades from sight for 6s: only his glowing eyes show, he moves 30% faster and takes 30% less damage. Every second a psychic pulse hurts everyone near him and marks them as WATCHED. Each stack makes Kuck\'s hits on them do 5% more damage (up to 6 stacks); stacks last 6s',su:14,ac:1,re:16,dmg:0,box:[0,0,0,0],inv:[0,14],
     start:(s,a)=>say(s,a.x,a.y-130,"I'M WATCHING YOU...",'#e8e4ff',36),
     tick:(s,a,f)=>{if(f===14){a.watch=KUCK.watch.t+1;s.fx.push({k:'ring',x:a.x,y:a.y-50,life:22,t:0,col:'#c8b8ff'})}}}),
  })},
@@ -745,6 +747,9 @@ const MUSH={y:[-70,-46,-22],vy:[-0.45,0,0.45],w:34,h:28,sc:0.5,dmg:24,kb:[5,-1.5
 {const m=CH.find(c=>c.id==='calder').moves;m.l.box=[8,-66,58,32];m.h.box=[8,-74,74,74];m.ah.box=[-6,-50,64,60]} // Calder's new art, reach unchanged: light (overhead swing into a stock thrust) hits chest to waist, heavy (rifle chopped down like a club) covers chest to the floor, air heavy covers the rifle swung down in front of him
 {const m=CH.find(c=>c.id==='owen').moves;m.h.box=[8,-70,74,40]} // Owen's new art: the heavy drives the rifle forward at waist height (was chest height), reach unchanged
 {const m=CH.find(c=>c.id==='heavyrail').moves;m.l.box=[8,-62,62,24];m.h.box=[8,-76,78,50]} // Heavy Rail's new art, reach unchanged: the knife thrust is at waist height (was chest), the crouching hammer punch reaches lower
+{const m=CH.find(c=>c.id==='kuck').moves;m.h.box=[8,-92,80,60];m.al.box=[0,-80,50,60];m.ah.box=[0,-72,80,56]} // Kuck's new art: heavy covers the big green burst (head to waist), air light is the swipe in front of his body, air heavy is the forward blast at chest height (reach unchanged)
+{const m=CH.find(c=>c.id==='dino').moves;m.l.box=[8,-66,52,30];m.ah.box=[-6,-60,66,50]} // Dino's new art, reach unchanged: the bow jab sits at chest-to-waist height, the air heavy covers the bow swung down in front of him
+{const m=CH.find(c=>c.id==='vega').moves;m.l.box=[8,-84,76,22];m.h.box=[8,-80,92,80];m.al.box=[8,-82,74,24];m.ah.box=[-6,-44,90,52]} // Vegagath's new art, reach unchanged: the glaive thrust is at shoulder height, the heavy chops from head height into the ground, the air light thrusts straight out, the air heavy swings down below him
 const SALTY_HEAVY=[52,[14,-4]];{const sm=CH.find(c=>c.id==='salty').moves,h=sm.h;h.dmg=SALTY_HEAVY[0];h.kb=SALTY_HEAVY[1];h.kbs=null;h.box=[8,-100,60,76];sm.ah.box=[8,-80,66,48]} // boxes fitted to his sprite: the heavy is an overhead slam down in front (reaches 68), the air heavy swings the accordion forward at chest height (not a stomp) // Salty's accordion swing: a shove to make space, not a damage source
 const TEDD_NORMALS={l:30,h:66,ah:58,lkb:[2,0],hkb:[6,-4]};{const tm=CH.find(c=>c.id==='tedd').moves;tm.l.dmg=TEDD_NORMALS.l;tm.l.kb=TEDD_NORMALS.lkb;tm.h.dmg=TEDD_NORMALS.h;tm.h.kb=TEDD_NORMALS.hkb;tm.ah.dmg=TEDD_NORMALS.ah} // Tedd's long flaming blade: lighter hits now that Pain Train carries his damage
 const DASK_NORMALS={l:53,h:115};{const dm=CH.find(c=>c.id==='dask').moves;dm.l.dmg=DASK_NORMALS.l;dm.h.dmg=DASK_NORMALS.h} // Dask hits harder with plain swings now that Reckless Rage is slower
@@ -945,7 +950,7 @@ function deal(s,a,d,dmg,src,type){
   if(d.ghost)return 0; // ghost brawl: ghosts have no health
   if(d.brk>0)return 0; // on a union break: untouchable
   type=type||dmgType(a,src);const rs=CH[d.c].resist;
-  let core=dmg*(a&&a!==d&&a.dragon>0?DRAGON_HIT:1)*(d.dragon>0?DRAGON_TAKE:1)*(a&&a!==d&&a.hawk>0?HAWK_MUL:1)*(a&&a!==d&&a.psycho>0?PSYCHO_MUL:1)*(d.reckless>0?1.2:1)*(d.pax>0?1+(PAX_MUL-1)*(d.paxLv||1):1)*(d.medx>0?MEDX_TAKE:1)*(a&&a!==d&&a.muddle>0?0.75:1)*(d.watched>0&&a&&a!==d&&CH[a.c].id==='kuck'?1+KUCK.watch.per*d.watched:1)*(kuckVeng(s,d)?KUCK.veng.take:1);
+  let core=dmg*(a&&a!==d&&a.dragon>0?DRAGON_HIT:1)*(d.dragon>0?DRAGON_TAKE:1)*(a&&a!==d&&a.hawk>0?HAWK_MUL:1)*(a&&a!==d&&a.psycho>0?PSYCHO_MUL:1)*(d.reckless>0?1.2:1)*(d.pax>0?1+(PAX_MUL-1)*(d.paxLv||1):1)*(d.medx>0?MEDX_TAKE:1)*(a&&a!==d&&a.muddle>0?0.75:1)*(d.watched>0&&a&&a!==d&&CH[a.c].id==='kuck'?1+KUCK.watch.per*d.watched:1)*(kuckVeng(s,d)?KUCK.veng.take:1)*(d.watch>0&&CH[d.c].id==='kuck'?KUCK.watch.take:1);
   const hexBonus=d.hex>0?core*0.16*(rs&&rs.Dark?1-rs.Dark:1):0; // the hex's extra damage is always Dark, whatever the hit was
   dmg=Math.round(core*(rs&&rs[type]?1-rs[type]:1)+hexBonus);
   if(d.temp>0&&dmg>0){const ab=Math.min(d.temp,dmg);d.temp-=ab;dmg-=ab;if(d.temp<=0)s.fx.push({k:'spark',x:d.x,y:d.y-60,col:'#c8c8d0',life:10,t:0})}
@@ -1224,7 +1229,7 @@ function tickProj(s){
       if(p.vy>0){const bot=p.y+p.h/2;let gy=null;for(const pl of PLATS){const sy=platY(pl,p.x);if(bot>=sy&&bot-p.vy<=sy+1&&p.x>pl.x&&p.x<pl.x+pl.w){gy=sy;break}}
         if(gy===null&&bot>=floorY(p.x))gy=floorY(p.x);if(gy!==null){p.y=gy-p.h/2;p.vy=0}}
       if(p.x<WALL_L+8||p.x>WALL_R-8)p.life=0}
-    if(p.life<=0&&p.kind==='imp')s.fx.push({k:'kimpboom',x:p.x,y:p.y,life:22,t:0});
+    if(p.life<=0&&p.kind==='imp')s.fx.push({k:'kimpboom',x:p.x,y:p.y,life:32,t:0,dir:Math.sign(p.vx)||1});
     if(p.x<-60||p.x>W+60||p.y>floorY(p.x)+10)p.life=0;
     if(STAGE.walls&&p.life>0&&p.kind!=='shiplaser')for(const w of STAGE.walls)if(w.door!==undefined&&doorClosed(s,w.door)&&(p.x-p.vx-w.x)*(p.x-w.x)<=0&&p.y>w.y0&&p.y<w.y1){p.life=0;s.fx.push({k:'spark',x:w.x,y:p.y,col:'#cfd6e0',life:10,t:0})}
     if(p.t===1&&p.kind==='bullet')s.fx.push({k:'smuzzle',x:p.x,y:p.y,life:10,t:0,dir:Math.sign(p.vx)||1});
@@ -2521,7 +2526,7 @@ kuck:{th:18,sh:18,T:31,neck:3,hr:12,ua:15,fa:15,aw:8,lw:10,foot:9,shX:2,shY:5,pa
   sleeve:'#2e2834',sleeveB:'#231e28',fore:'#2e2834',foreB:'#231e28',glove:'#3a2020',grip:-0.4,glowCol:'#ff5a2a',
   behind(o,f,t,hipY){ // long Zhentarim coat tails; stuffed David strapped across his back when he has him
     g.save();g.translate(0,hipY);g.rotate(o.lean);const sw=f.st==='walk'?Math.sin(t*0.3)*3:0;
-    if(S&&kuckHome(S,f)&&!(f.st==='atk'&&f.mv==='s1'&&f.mf>=4)&&f.st!=='ko')kuckDoll(-14,-6,40,-0.5);
+    if(S&&!sheetFor(f)&&kuckHome(S,f)&&!(f.st==='atk'&&f.mv==='s1'&&f.mf>=4)&&f.st!=='ko')kuckDoll(-14,-6,40,-0.5);
     shape(()=>{g.moveTo(-12,-4);g.lineTo(10,-4);g.lineTo(9+sw,24);g.lineTo(-16+sw,26);g.closePath()},'#2a2430',1.5);
     g.fillStyle='#8a1c24';g.fillRect(-15+sw,22,24,3);g.restore()},
   torso(o,f){
@@ -2632,10 +2637,10 @@ function pixelSprite(f,key){
 }
 /* ---- hand-made sprite sheets (8 columns x 14 rows of 256x272 cells, feet at 128,226, facing right).
    Rows: idle, walk, jump, light, heavy, air light, air heavy, special 1, special 2, super, hit, block, stunned, knocked down. ---- */
-const SHEETS={frica:{src:'frica_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8],cell:[512,384,256,330]},madog:{src:'madog_sheet.png',frames:[7,8,2,7,8,4,5,8,6,8,2,2,4,1,5],cell:[512,384,256,330]},feng:{src:'feng_sheet.png',frames:[8,7,2,6,8,4,5,8,6,8,2,2,4,1,8],cell:[512,384,256,330]},dask:{src:'dask_sheet.png',frames:[8,8,2,6,8,4,5,8,8,8,2,2,4,1,8,0,7],cell:[512,384,256,330]},tenebrund:{src:'tenebrund_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8]},salty:{src:'salty_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8]},calder:{src:'calder_sheet.png',frames:[8,8,2,6,8,4,5,8,8,8,2,2,4,1,8],cell:[512,384,256,330]},heavyrail:{src:'heavyrail_sheet.png',frames:[4,7,2,6,8,4,5,8,8,8,2,2,4,1,8],cell:[512,384,256,330]},owen:{src:'owen_sheet.png',frames:[4,6,2,8,8,4,5,8,8,8,2,2,4,1,8],cell:[512,384,256,330]},tedd:{src:'tedd_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8],cell:[512,384,256,330]},bof:{src:'bof_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8],cell:[512,384,256,330]},chief:{src:'chief_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8],breakRow:15},soren:{src:'soren_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8]}};
+const SHEETS={frica:{src:'frica_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8],cell:[512,384,256,330]},madog:{src:'madog_sheet.png',frames:[7,8,2,7,8,4,5,8,6,8,2,2,4,1,5],cell:[512,384,256,330]},feng:{src:'feng_sheet.png',frames:[8,7,2,6,8,4,5,8,6,8,2,2,4,1,8],cell:[512,384,256,330]},dask:{src:'dask_sheet.png',frames:[8,8,2,6,8,4,5,8,8,8,2,2,4,1,8,0,7],cell:[512,384,256,330]},tenebrund:{src:'tenebrund_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8]},salty:{src:'salty_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8]},calder:{src:'calder_sheet.png',frames:[8,8,2,6,8,4,5,8,8,8,2,2,4,1,8],cell:[512,384,256,330]},heavyrail:{src:'heavyrail_sheet.png',frames:[4,7,2,6,8,4,5,8,8,8,2,2,4,1,8],cell:[512,384,256,330]},owen:{src:'owen_sheet.png',frames:[4,6,2,8,8,4,5,8,8,8,2,2,4,1,8],cell:[512,384,256,330]},tedd:{src:'tedd_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8],cell:[512,384,256,330]},bof:{src:'bof_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8],cell:[512,384,256,330]},chief:{src:'chief_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8,8],breakRow:15},soren:{src:'soren_sheet.png',frames:[8,8,2,6,8,4,5,8,6,8,2,2,4,1,8]},vega:{src:'vega_sheet.png',frames:[8,6,2,6,8,4,5,8,8,8,2,2,4,1,6],cell:[512,384,256,330]},dino:{src:'dino_sheet.png',frames:[5,6,2,6,8,4,5,8,8,8,2,2,4,1,6],cell:[512,384,256,330]},kuck:{src:'kuck_sheet.png',frames:[5,6,2,7,8,5,7,8,8,8,2,2,4,1,6],cell:[512,384,256,330]}};
 const SHEET_ROW={l:3,h:4,al:5,ah:6,s1:7,s2:8,su:9,dact:8}
-const ART_HIT={salty:{l:[3,1],h:[4,2],ah:[2,2]},madog:{l:[3,3],h:[3,2],ah:[3,2]},dask:{l:[3,2],h:[5,2],ah:[3,2]},calder:{l:[3,2],h:[5,2],ah:[3,2]},owen:{l:[2,2],h:[5,2],ah:[3,2]},heavyrail:{l:[3,2],h:[5,2],ah:[3,2]}}; // per fighter and move: [first impact column, how many impact columns] in that move's sheet row. Wind-up frames play during startup, impact frames while the hitbox is live, the rest during recovery. Add an entry when a fighter gets new art;
-const FXS={avrider:{src:'av_rider.png'},avcrusher:{src:'av_crusher.png'},avpeggy:{src:'av_peggy.png'},demon:{src:'demon_sheet.png'},static:{src:'static_sheet.png'},madog:{src:'madog_fx.png'},fengsw:{src:'feng_sw.png'},fengpamph:{src:'feng_pamph.png'},fengpillar:{src:'feng_pillar.png'},vortex:{src:'erebus_vortex.png'},gfboulder:{src:'gf_boulder.png'},gfgiant:{src:'gf_giant.png'},unda:{src:'erebus_unda.png'},dask:{src:'dask_fx.png'},ten:{src:'tenebrund_fx.png'},sbul:{src:'salty_bullets.png'},swave:{src:'salty_wave.png'},shipdoor:{src:'ship_door.png'},bloatfly:{src:'tahoe_bloatfly.png'},cproj:{src:'calder_proj.png'},cchem:{src:'calder_chems.png'},hrfx:{src:'hr_fx.png'},hrp:{src:'hr_plasma.png'},oproj:{src:'owen_proj.png'},olaser:{src:'owen_laser.png'},osmoke:{src:'owen_smoke.png'},tfx:{src:'tedd_fx.png'},bfx:{src:'bof_fx.png'},cdeer:{src:'chief_deer.png'},celf:{src:'chief_elves.png'},cfx:{src:'chief_fx.png'},arrows:{src:'vogler_arrows.png'},sdragon:{src:'soren_dragon.png'},sfx:{src:'soren_fx.png'}};
+const ART_HIT={salty:{l:[3,1],h:[4,2],ah:[2,2]},madog:{l:[3,3],h:[3,2],ah:[3,2]},dask:{l:[3,2],h:[5,2],ah:[3,2]},calder:{l:[3,2],h:[5,2],ah:[3,2]},owen:{l:[2,2],h:[5,2],ah:[3,2]},heavyrail:{l:[3,2],h:[5,2],ah:[3,2]},kuck:{l:[3,2],h:[4,2],ah:[3,2],s1:[5,1],s2:[4,1]},dino:{l:[2,2],h:[5,2],ah:[3,2],s1:[6,1],s2:[6,1]},vega:{l:[3,2],h:[4,2],ah:[2,2],s1:[4,1]}}; // per fighter and move: [first impact column, how many impact columns] in that move's sheet row. Wind-up frames play during startup, impact frames while the hitbox is live, the rest during recovery. Add an entry when a fighter gets new art;
+const FXS={kimp:{src:'kimp.png'},kimpb:{src:'kimp_boom.png'},avrider:{src:'av_rider.png'},avcrusher:{src:'av_crusher.png'},avpeggy:{src:'av_peggy.png'},demon:{src:'demon_sheet.png'},static:{src:'static_sheet.png'},madog:{src:'madog_fx.png'},fengsw:{src:'feng_sw.png'},fengpamph:{src:'feng_pamph.png'},fengpillar:{src:'feng_pillar.png'},vortex:{src:'erebus_vortex.png'},gfboulder:{src:'gf_boulder.png'},gfgiant:{src:'gf_giant.png'},unda:{src:'erebus_unda.png'},dask:{src:'dask_fx.png'},ten:{src:'tenebrund_fx.png'},sbul:{src:'salty_bullets.png'},swave:{src:'salty_wave.png'},shipdoor:{src:'ship_door.png'},bloatfly:{src:'tahoe_bloatfly.png'},cproj:{src:'calder_proj.png'},cchem:{src:'calder_chems.png'},hrfx:{src:'hr_fx.png'},hrp:{src:'hr_plasma.png'},oproj:{src:'owen_proj.png'},olaser:{src:'owen_laser.png'},osmoke:{src:'owen_smoke.png'},tfx:{src:'tedd_fx.png'},bfx:{src:'bof_fx.png'},cdeer:{src:'chief_deer.png'},celf:{src:'chief_elves.png'},cfx:{src:'chief_fx.png'},arrows:{src:'vogler_arrows.png'},sdragon:{src:'soren_dragon.png'},sfx:{src:'soren_fx.png'}};
 const SBC=84,SWC=230; // salty bullets (bullet 4, muzzle 4, impact 6) and Mush It wave (loop 8, fade 8)
 const TFC=204; // tenebrund_fx cell; rows: stink puff 6, loop 8, fade 6, grater sparks 6, belly flop 8, flies 6
 const DFC=284; // dask_fx cell; rows: reckless aura 5, axe slash 5, rage finisher 8, dask action dust 5
@@ -2655,6 +2660,11 @@ function demonFrame(z){ // rows: spawn, idle, run, jump, claw, betrayed run, bet
 }
 const STC=274,STS=230/265; // static sheet cell size; sheet px -> game units (ring = 230 wide)
 for(const id in SHEETS){const sh=SHEETS[id];sh.img=new Image();sh.img.onload=()=>{sh.ready=true;if(typeof refreshPortraits==='function')refreshPortraits()};sh.img.src=sh.src}
+function vegaCensor(f,c){ // The Helicopter: a skin-coloured blur hides the loincloth, then a censor bar spins from his crotch like a fan blade (Jon's bar art if loaded, else plain black)
+  const im=FXS.vcensor&&FXS.vcensor.ready?FXS.vcensor.img:null,L=34,T=9,py=-c.h*0.49;g.save();
+  g.filter='blur(3px)';g.fillStyle='#888b81';g.beginPath();g.ellipse(-2,-c.h*0.5,15,12,0,0,7);g.fill();g.filter='none';
+  g.translate(8,py);g.rotate(f.t*0.75);
+  if(im){g.imageSmoothingEnabled=false;g.drawImage(im,0,-T/2,L,T)}else{g.fillStyle='#000';g.fillRect(0,-T/2,L,T)}g.restore()}
 function sheetFor(f){const sh=SHEETS[CH[f.c].id];return pixelArt&&sh&&sh.ready?sh:null}
 function sheetFrame(f,sh){
   const c=CH[f.c],t=f.t;let row=0,col=0;
@@ -2669,6 +2679,7 @@ function sheetFrame(f,sh){
   if(c.id==='madog'&&f.st==='atk'&&f.mv==='su'&&sh.cell)return[9,f.mf<24?Math.floor(f.mf/6):4+Math.floor(t/3)%4]; // OH YEAH!: arms wide, then the charge loop
   if(c.id==='owen'&&f.st==='atk'&&f.mv==='su'&&sh.cell){const L=c.moves.su.len,mf=f.mf;return[9,mf<16?Math.min(2,Math.floor(mf/16*3)):mf<L-10?Math.min(5,3+Math.floor((mf-16)/4)):6+Math.min(1,Math.floor((mf-(L-10))/5))]} // Captain's Orders: radio call, then point as the ship fires, then lower
   if(c.id==='heavyrail'&&f.st==='atk'&&f.mv==='su'&&sh.cell){const a=f.md.air;return[9,a===1?(f.vy<0?3:4):a===2?Math.min(7,5+Math.floor((f.mf-(c.moves.su.len-28))/10)):Math.min(2,Math.floor(f.mf/5))]} // Power Armor Drop: jets fire, launch, fall, land, stand
+  if(c.id==='vega'&&f.st==='atk'&&f.mv==='su'&&sh.cell)return[9,f.mf<16?Math.min(2,Math.floor(f.mf/6)):3+Math.floor(t/4)%5]; // The Helicopter: armour off, then he walks in while the censor bar spins
   if(c.id==='dask'&&f.st==='atk'&&f.mv==='s2')return sh.cell?[8,Math.floor(t/2)%8]:[1,Math.floor(t/2)%sh.frames[1]]; // Barbarian Charge: his charge loop (old art: his run, sped up)
   if(c.id==='dask'&&f.st==='atk'&&f.mv==='dact'&&sh.cell)return[10,1]; // Dask Action: flinch back as he bolts (no dodge art yet)
   if(c.id==='dask'&&f.st==='atk'&&f.mv==='su'&&sh.cell){const L=[0,3,6,10,16,20,26,30,36,40,46,50,58,64,70];let i=0;while(i<L.length-1&&f.mf>=L[i+1])i++;return i<8?[9,i]:[16,i-8]} // Rage Unleashed: a raise and an impact frame for each of the 5 hits
@@ -2739,7 +2750,7 @@ function drawFighter(f,tagCol,tag){
   if(f.reckless>0&&f.st!=='ko'&&fxOn('dask')){const d=DFC*0.63;fxCell(fxOn('dask'),(Math.floor(f.t/5)%5)*DFC,0,DFC,DFC,-d/2,-c.h*0.55-d/2,d,d)}
   const heat=S&&S.zones&&S.f.some(o=>o!==f&&CH[o.c].id==='owen'&&inSmoke(S,f,o.i)); // inside an enemy Owen's smoke (any number of fighters)
   if(heat&&'filter' in g)g.filter='grayscale(1) brightness(1.15) sepia(1) saturate(9) hue-rotate(-28deg) contrast(1.25)';
-  const kw=f.watch>0&&f.st!=='ko';if(kw){g.save();g.globalAlpha*=0.12;g.shadowBlur=0}if(!(f.st==='atk'&&f.md&&f.md.ride))drawBody(f,'f'+f.i);g.filter='none';if(f.specter>0&&f.st!=='ko'){const q=f.t*0.09,sx=Math.cos(q)*38,sy=-c.h*0.6+Math.sin(q)*12;g.save();g.globalAlpha=Math.sin(q)>0?0.75:0.4;g.fillStyle='#d8d0f0';g.beginPath();g.arc(sx,sy-8,9,Math.PI,0);g.lineTo(sx+9,sy+12);for(let w=0;w<4;w++)g.lineTo(sx+9-w*6-3,sy+12-(w%2?0:5));g.lineTo(sx-9,sy+12);g.closePath();g.fill();g.fillStyle='#2a1a3a';g.fillRect(sx-5,sy-10,3,4);g.fillRect(sx+2,sy-10,3,4);g.restore()} // Squirm's specter circling him
+  const kw=f.watch>0&&f.st!=='ko';if(kw){g.save();g.globalAlpha*=0.12;g.shadowBlur=0}if(!(f.st==='atk'&&f.md&&f.md.ride))drawBody(f,'f'+f.i);g.filter='none';if(c.id==='vega'&&f.st==='atk'&&f.mv==='su'&&f.mf>=16&&sheetFor(f))vegaCensor(f,c);if(f.specter>0&&f.st!=='ko'){const q=f.t*0.09,sx=Math.cos(q)*38,sy=-c.h*0.6+Math.sin(q)*12;g.save();g.globalAlpha=Math.sin(q)>0?0.75:0.4;g.fillStyle='#d8d0f0';g.beginPath();g.arc(sx,sy-8,9,Math.PI,0);g.lineTo(sx+9,sy+12);for(let w=0;w<4;w++)g.lineTo(sx+9-w*6-3,sy+12-(w%2?0:5));g.lineTo(sx-9,sy+12);g.closePath();g.fill();g.fillStyle='#2a1a3a';g.fillRect(sx-5,sy-10,3,4);g.fillRect(sx+2,sy-10,3,4);g.restore()} // Squirm's specter circling him
   if(kw){g.restore();const ey=-c.h+16+(f.st==='atk'?2:0);g.save();g.shadowColor='#fff';g.shadowBlur=14;g.fillStyle='#fff';g.fillRect(2,ey,5,3);g.fillRect(10,ey,5,3);g.restore()} // I'm Watching You: only the eyes show
   if(c.id==='tenebrund'&&f.st!=='ko'&&sheetFor(f)&&fxOn('ten')){const d=TFC*0.55;fxCell(fxOn('ten'),(Math.floor(f.t/7)%4)*TFC,5*TFC,TFC,TFC,-d/2+4,-c.h-8-d/2,d,d)}
   g.shadowBlur=0;
@@ -2825,7 +2836,7 @@ function drawProj(p){
   else if(p.kind==='eblast'){const gr=g.createLinearGradient(-20*Math.sign(p.vx||1),0,10*Math.sign(p.vx||1),0);gr.addColorStop(0,'#5a2a9a00');gr.addColorStop(1,'#b48cff');g.fillStyle=gr;g.fillRect(-20,-5,40,10);g.fillStyle='#f0e8ff';g.beginPath();g.arc(6*Math.sign(p.vx||1),0,5,0,7);g.fill()}
   else if(p.kind==='glaive'){g.scale(Math.sign(p.vx)||1,1);g.rotate(Math.PI/2);g.translate(0,20);vegaGlaive()} // flying blade-first
   else if(p.kind==='david'){const fl=p.vx<0;g.rotate(p.t*0.28*(fl?-1:1));kuckDoll(0,20,44,0,fl)} // stuffed David, tumbling
-  else if(p.kind==='imp'){g.scale(Math.sign(p.vx)||1,1);g.translate(0,p.h/2);kuckImp(p.t,p.vy===0?1:0.2)}
+  else if(p.kind==='imp'){g.scale(Math.sign(p.vx)||1,1);g.translate(0,p.h/2);const im=fxOn('kimp');if(im)fxCell(im,(p.vy===0?Math.floor(p.t/3)%7:1)*128,0,128,128,-32,-59,64,64);else kuckImp(p.t,p.vy===0?1:0.2)} // imp sheet kimp.png: row 0 run (7), row 1 burst (13); 128 px cells at 2x
   else if(p.kind==='arrow'){ // Dino's arrows: plain, fire, whistle, rope
     const own=S.f[p.o];
     if(p.rope&&own){g.restore();g.strokeStyle='#c8a06a';g.lineWidth=1.6;g.beginPath();g.moveTo(own.x+own.face*20,own.y-70);g.quadraticCurveTo((own.x+p.x)/2,(own.y-70+p.y)/2+18,p.x,p.y);g.stroke();g.save();g.translate(p.x,p.y)}
@@ -2851,7 +2862,7 @@ function drawZone(z){
     if(im){g.scale(-z.dir,1);g.drawImage(im,(Math.floor(z.t/3)%A.n)*A.fw,0,A.fw,A.fh,-P2.w/2-A.gx0*A.k/2,-A.gy*A.k/2,A.fw/2,A.fh/2)}
     else{g.scale(z.dir,1);poly([-P2.w/2,-20,-P2.w/2+20,-P2.h,P2.w/2-30,-P2.h,P2.w/2,-40,P2.w/2,-20],'#3a1c16',2);g.fillStyle='#ff8a3d';g.fillRect(P2.w/2-40,-P2.h+14,22,14);[-60,0,60].forEach(cx=>circ(cx,-20,20,'#2a2a2a',2))}
     g.restore();return}
-  if(z.k==='kdavid'){const a=z.life<30?z.life/30:1;g.save();g.globalAlpha=a;if(z.ground){g.fillStyle='#0005';g.beginPath();g.ellipse(z.x,z.y,20,4,0,0,7);g.fill()}kuckDoll(z.x,z.y,KUCK.statue.h,z.ground?0:z.t*0.3,z.face<0);g.restore();return} // statue David standing where he landed, facing the way he was thrown
+  if(z.k==='kdavid'){const a=z.life<30?z.life/30:1;g.save();g.globalAlpha=a;if(z.ground){g.fillStyle='#0005';g.beginPath();g.ellipse(z.x,z.y,28,5,0,0,7);g.fill()}kuckDoll(z.x,z.y,KUCK.statue.h,z.ground?0:z.t*0.3,z.face<0);g.restore();return} // statue David standing where he landed, facing the way he was thrown
   if(z.k==='demon'&&fxOn('demon')){const[r,c]=demonFrame(z),U=1.5;g.save();g.translate(z.x,z.y);g.scale(z.face,1);fxCell(fxOn('demon'),c*192,r*192,192,192,-96/U,-170/U,192/U,192/U);g.restore();return}
   if(z.k==='pattern'&&fxOn('static')){const im=fxOn('static'),d=STC*STS;let r,c;
     if(z.delay>0){r=0;c=Math.min(6,Math.floor((22-z.delay)/22*7))}else{r=1;c=Math.min(8,Math.floor((40-z.life)/40*9))}
@@ -2993,6 +3004,7 @@ function drawFx(e){
   else if(e.k==='vclothes'){g.save();const t=e.t;[[-3.5,-7,'#6a4a2a',0.25],[2.5,-8.5,'#3a3028',-0.3],[4.5,-6,'#2a1e14',0.4]].forEach(([vx,vy,col,sp],i)=>{const x=e.x+vx*e.dir*t,y=e.y+vy*t+0.3*t*t;g.save();g.translate(x,y);g.rotate(t*sp);g.globalAlpha=1-k;g.fillStyle=col;g.fillRect(-10,-7,20,14);g.restore()});g.restore()}
   else if(e.k==='sqboom'){g.save();g.globalAlpha=1-k;g.strokeStyle='#cfe6ff';g.lineWidth=5*(1-k)+1;g.beginPath();g.arc(e.x,e.y,e.r*(0.2+0.8*k),0,7);g.stroke();g.strokeStyle='#9fd0ff';for(let i=0;i<6;i++){const a=i*1.05+e.t*0.2;g.beginPath();g.moveTo(e.x,e.y);g.lineTo(e.x+Math.cos(a)*e.r*k,e.y+Math.sin(a)*e.r*k*0.7);g.stroke()}g.restore()}
   else if(e.k==='kpulse'){g.save();g.globalAlpha=(1-k)*0.8;g.strokeStyle='#d8ccff';g.lineWidth=4;g.beginPath();g.ellipse(e.x,e.y,e.r*(0.3+0.7*k),e.r*(0.3+0.7*k)*0.55,0,0,7);g.stroke();g.globalAlpha=(1-k)*0.18;g.fillStyle='#b8a8ff';g.fill();g.restore()}
+  else if(e.k==='kimpboom'&&fxOn('kimpb')){g.save();g.translate(e.x,e.y+18);g.scale(e.dir||1,1);fxCell(fxOn('kimpb'),Math.min(12,Math.floor(k*13))*169,0,169,169,-40,-65.5,84.5,84.5);g.restore()} // kimp_boom.png: 13 frames of 169 px at 2x, feet at (80,131) // swells, bursts into hellfire, the hat floats down
   else if(e.k==='kimpboom'){g.save();g.globalAlpha=1-k;const r=10+30*k;const gr=g.createRadialGradient(e.x,e.y,1,e.x,e.y,r);gr.addColorStop(0,'#fff2a0');gr.addColorStop(0.4,'#ff8a2a');gr.addColorStop(1,'#c4302b00');g.fillStyle=gr;g.beginPath();g.arc(e.x,e.y,r,0,7);g.fill();g.restore()}
   else if(e.k==='dshot'){g.save();g.globalAlpha=1-k;g.lineCap='round';g.strokeStyle='#ff5a5a';g.lineWidth=14*(1-k)+2;g.beginPath();g.moveTo(e.x,e.y);g.lineTo(e.x2,e.y2);g.stroke();g.strokeStyle='#fff6e0';g.lineWidth=4*(1-k)+1;g.stroke();g.restore()} // Called Shot's arrow trail
   else if(e.k==='ring'){g.strokeStyle=e.col;g.globalAlpha=1-k;g.lineWidth=e.small?2:5;g.beginPath();g.ellipse(e.x,e.y,(e.small?30:180)*k+10,(e.small?8:40)*k+4,0,0,7);g.stroke();g.globalAlpha=1}
@@ -3521,7 +3533,7 @@ function cardHTML(c,i,withMoves){
   return `<button class="card" type="button" data-ci="${i}"><canvas data-por="${i}"></canvas><div><b>${c.name}</b><div class="meta">${c.camp}</div><span class="role">${c.role}</span>${statBars(c)}
   ${withMoves?`<div class="moves">${c.passive?`<span>Passive ${c.passive.n}</span>: ${c.passive.d}<br>`:''}<span>S1 ${m.s1.n}</span> (${(c.types&&c.types.s1)||'Physical'}): ${m.s1.d}<br><span>S2 ${m.s2.n}</span> (${(c.types&&c.types.s2)||'Physical'}): ${m.s2.d}<br><span>Super ${m.su.n}</span> (${(c.types&&c.types.su)||'Physical'}): ${m.su.d}</div>`:`<div class="moves">${c.blurb}</div>`}</div></button>`;
 }
-const PORTRAIT_ART=Object.fromEntries(['frica','madog','feng','tenebrund','salty','dask','calder','heavyrail','owen','tedd','bof','chief','soren'].map(id=>[id,'portraits/'+id+'.png'])); // optional painted portraits: id -> 'portraits/<id>.png' (falls back to the fighter's sprite)
+const PORTRAIT_ART=Object.fromEntries(['frica','madog','feng','tenebrund','salty','dask','calder','heavyrail','owen','tedd','bof','chief','soren','kuck','dino','vega'].map(id=>[id,'portraits/'+id+'.png'])); // optional painted portraits: id -> 'portraits/<id>.png' (falls back to the fighter's sprite)
 function porHTML(i,cls){const src=PORTRAIT_ART[CH[i].id];return src?`<img src="${src}" alt="" class="${cls||''}" onerror="this.replaceWith(Object.assign(document.createElement('canvas'),{className:'${cls||''}'}));refreshPortraits()">`:`<canvas data-por="${i}" class="${cls||''}"></canvas>`}
 $('cards').innerHTML=CH.map((c,i)=>`<button class="tile" type="button" data-ci="${i}" aria-label="${c.name}" title="${c.name}">${porHTML(i)}</button>`).join('');
 $('moveCards').innerHTML=CH.map((c,i)=>cardHTML(c,i,true).replace('<button class="card" type="button"','<div class="card"').replace(/<\/button>$/,'</div>')).join('');
@@ -3716,7 +3728,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){if(NET.host)hostNextMatch(false);e
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.17'; // shown on the title screen; online players must match
+const VERSION='0.2.18'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 /* ---- nickname: asked once per device before the main menu, shown to the other players online (display only, never in the sim) ---- */
