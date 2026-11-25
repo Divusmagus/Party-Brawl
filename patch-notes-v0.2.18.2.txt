@@ -1,0 +1,5 @@
+PARTY BRAWL v0.2.18.2 (minor patch)
+
+NEW ART
+- Portraits for Kuck Hold, Dino, Vegagath Hardheart, Squirm and Nettor Hallos are zoomed in to match
+  the rest of the roster on the select screen.
