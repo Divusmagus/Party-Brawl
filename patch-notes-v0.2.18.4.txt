@@ -1,0 +1,3 @@
+TABLETOP SHOWDOWN v0.2.18.4 (minor patch)
+
+- The game is now called TableTop Showdown, with a new logo and title-screen art.

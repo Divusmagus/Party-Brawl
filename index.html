@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Party Brawl</title>
+<title>TableTop Showdown</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Cinzel:wght@700;900&family=Orbitron:wght@600;800&family=VT323&family=Rubik:wght@400;600;800&display=swap">
 <style>
@@ -22,7 +22,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1
 .screen.on{display:block}
 .wrap{max-width:1040px;margin:0 auto}
 h1,h2{font-family:Bangers,Impact,sans-serif;font-weight:400;letter-spacing:.03em;margin:0;line-height:1.05}
-h1{font-size:clamp(52px,11vw,104px);color:var(--gold);text-shadow:4px 4px 0 var(--red),8px 8px 0 #000}
+h1.logo{margin:0 0 6px;line-height:0}h1.logo img{width:min(560px,86vw);height:auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}#sTitle{background:linear-gradient(rgba(14,10,30,.55),rgba(14,10,30,.75)),url(title_bg.jpg?v=0.2.18.4) center/cover no-repeat}h1{font-size:clamp(52px,11vw,104px);color:var(--gold);text-shadow:4px 4px 0 var(--red),8px 8px 0 #000}
 h2{font-size:clamp(30px,5vw,44px);color:var(--gold);text-shadow:3px 3px 0 #000;margin-bottom:10px}
 .sub{color:var(--dim);margin:6px 0 22px}
 .menu{display:grid;gap:12px;max-width:420px}
@@ -126,7 +126,7 @@ kbd{font:600 12px Rubik,sans-serif;background:#000;border:1px solid var(--line);
   </div>
 
   <section class="screen on" id="sTitle"><div class="wrap">
-    <h1>Party Brawl</h1>
+    <h1 class="logo"><img src="logo.png?v=0.2.18.4" alt="TableTop Showdown"></h1>
     <p class="sub">Eight years of campaigns. Twelve fighters. Zero dignity. <span class="note">Prototype build <b id="verTag"></b>. Online: both players need the same version.</span><span class="note" id="verNew" style="display:none"></span></p>
     <p class="note" id="whoAmI"></p>
     <div class="menu">
@@ -3729,7 +3729,7 @@ $('oSelect').onclick=()=>{if(mode==='online'){if(NET.host)hostNextMatch(false);e
    side's input is predicted (= their last known input) and, when the real one arrives and differs,
    the game rewinds to that frame and replays it. The simulation is deterministic, so both sides
    end up identical. */
-const VERSION='0.2.18.3'; // shown on the title screen; online players must match
+const VERSION='0.2.18.4'; // shown on the title screen; online players must match
 const BUILD='pb-'+VERSION+'-'+CH.length+'-'+STAGES.length;
 $('verTag').textContent='v'+VERSION;
 /* ---- nickname: asked once per device before the main menu, shown to the other players online (display only, never in the sim) ---- */
