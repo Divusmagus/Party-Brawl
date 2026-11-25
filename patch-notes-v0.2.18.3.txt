@@ -1,0 +1,5 @@
+PARTY BRAWL v0.2.18.3 (minor patch)
+
+FIXES
+- The zoomed-in portraits for Kuck Hold, Squirm and Nettor Hallos now show up for everyone. Browsers
+  were holding on to the old copies; portraits now load fresh whenever they change.
