@@ -23,9 +23,10 @@ NEW ART
     fan blade. It's a plain black bar for now; custom censor bar art is coming.
 
 MUSIC
-- Theme songs for Kuck Hold ("A Cuck's Gold") and Tenebrund Stoneshaft ("Tenebrund's Got an
-  Appetite") are on the way: they're in the test build but didn't make it into this update. Until
-  then those two fighters get the stage music.
+- KUCK HOLD has his own theme song, "A Cuck's Gold".
+- TENEBRUND STONESHAFT has his own theme song, "Tenebrund's Got an Appetite".
+- Like the other fighter themes, these cut in when that fighter breaks the opponent's bar first or
+  won the last round, play when they win, and play in Lives mode while they're in the lead.
 
 BUG FIXES
 - DINO: fixed getting stuck hanging in the air after a Rope arrow. If something blocks the zip
